@@ -42,6 +42,7 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean \
+ && (sed -i 's/Components: main/Components: main universe restricted multiverse/' /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true) \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
       ros-${ROS_DISTRO}-ros-gz \
