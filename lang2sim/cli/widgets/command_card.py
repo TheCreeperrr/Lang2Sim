@@ -5,6 +5,7 @@ File: lang2sim/cli/widgets/command_card.py
 
 from typing import Any
 
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.message import Message
@@ -103,7 +104,7 @@ class CommandCard(Widget):
     class Approved(Message):
         """User approved command execution."""
 
-        def __init__(self, event_id: str, always_allow: bool = False):
+        def __init__(self, event_id: str, always_allow: bool = False) -> None:
             super().__init__()
             self.event_id = event_id
             self.always_allow = always_allow
@@ -111,7 +112,7 @@ class CommandCard(Widget):
     class Rejected(Message):
         """User rejected command execution."""
 
-        def __init__(self, event_id: str):
+        def __init__(self, event_id: str) -> None:
             super().__init__()
             self.event_id = event_id
 
@@ -123,7 +124,7 @@ class CommandCard(Widget):
         arguments: dict[str, Any] | None = None,
         permission_required: bool = True,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.event_id = event_id
         self.command = command
@@ -136,7 +137,7 @@ class CommandCard(Widget):
         self.stdout: str = ""
         self.stderr: str = ""
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         # Header: Title + Status Badge
         with Horizontal(classes="cmd-header"):
             yield Static(

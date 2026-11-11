@@ -9,9 +9,11 @@ from typing import Any
 
 from rich.markup import escape
 from textual import events, work
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
+from textual.widget import Widget
 from textual.widgets import Markdown, Static
 
 from ...agent.nemotron_client import NemotronClient
@@ -53,7 +55,7 @@ class WorkspaceScreen(Screen):
         session_id: str | None = None,
         workspace_name: str = "active_project",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.initial_prompt = initial_prompt
         self.client = NemotronClient()
@@ -99,7 +101,7 @@ class WorkspaceScreen(Screen):
         )
         self._progress_line: Static | None = None
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         # Top title bar
         yield Static(f"S2L | {self.session.title} — lang2sim", id="workspace-header")
 
@@ -590,14 +592,14 @@ class WorkspaceScreen(Screen):
 
     # --- demo commands ------------------------------------------------------------
     @work(exclusive=False, group="demo")
-    async def run_demo_command(self, command) -> None:
+    async def run_demo_command(self, command: str) -> None:
         await self.demo.run(command)
         self.poll_telemetry()
 
     def _demo_say(self, markup: str) -> None:
         self._mount_chat(Static(markup, classes="demo-line"))
 
-    def _demo_show(self, renderable) -> None:
+    def _demo_show(self, renderable: Any) -> None:
         self._mount_chat(Static(renderable, classes="demo-table"))
 
     def _demo_progress(self, markup: str | None) -> None:
@@ -611,7 +613,7 @@ class WorkspaceScreen(Screen):
         else:
             self._progress_line.update(markup)
 
-    def _mount_chat(self, widget) -> None:
+    def _mount_chat(self, widget: Widget) -> None:
         try:
             chat_scroll = self.query_one("#chat-scroll", VerticalScroll)
         except Exception:  # noqa: BLE001 - screen gone

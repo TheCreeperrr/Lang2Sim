@@ -3,6 +3,7 @@ Custom Command Palette Modal (ctrl+p)
 File: lang2sim/cli/screens/command_palette_modal.py
 """
 
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
@@ -95,12 +96,12 @@ class CommandPaletteModal(ModalScreen[str | None]):
         Binding("enter", "submit_selected", "Select", show=False),
     ]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.selected_index: int = 0
         self.filtered_commands: list[dict[str, str]] = list(COMMANDS)
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         with Vertical(id="command-palette-dialog"):
             with Horizontal(id="palette-header"):
                 yield Static("Commands", id="palette-title")

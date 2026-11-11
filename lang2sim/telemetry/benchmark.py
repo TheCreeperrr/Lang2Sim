@@ -143,6 +143,7 @@ def mission_optimal_length(
 
 
 def load_occupancy(run_dir: Path, map_name: str = "map.yaml") -> OccupancyGrid | None:
+    """Load an occupancy grid from map.yaml in the run directory if present."""
     path = Path(run_dir) / map_name
     if not path.is_file():
         return None
@@ -184,6 +185,7 @@ def footprint_points(
 def dynamic_obstacles(
     trajectory: Mapping[str, Any], spawned: Sequence[Mapping[str, Any]] | None = None
 ) -> list[tuple[float, float, float]]:
+    """Extract clearance obstacle points for all spawned entities during a run."""
     entries = (
         spawned
         if spawned is not None
@@ -406,6 +408,7 @@ def score_run_folder(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entrypoint to score a run folder and output benchmark reports."""
     import argparse
 
     ap = argparse.ArgumentParser(

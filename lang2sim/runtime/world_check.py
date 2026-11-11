@@ -54,6 +54,8 @@ NORMALIZED_NAME = "world.l2s.sdf"
 
 @dataclass(frozen=True)
 class Issue:
+    """Pre-flight validation warning or error detected in an SDF world."""
+
     level: Level
     code: str
     message: str
@@ -61,6 +63,8 @@ class Issue:
 
 @dataclass
 class WorldReport:
+    """Consolidated pre-flight inspection report for an SDF world."""
+
     world_name: str | None = None
     sdf_version: str | None = None
     issues: list[Issue] = field(default_factory=list)
@@ -107,6 +111,7 @@ def _pose_ok(el: ET.Element) -> bool:
 
 
 def default_model_paths() -> list[Path]:
+    """Retrieve existing Gazebo model search directories from GZ_SIM_RESOURCE_PATH."""
     paths = [Path(p) for p in os.environ.get("GZ_SIM_RESOURCE_PATH", "").split(":") if p]
     return [p for p in paths if p.is_dir()]
 

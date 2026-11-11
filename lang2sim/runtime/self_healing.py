@@ -71,6 +71,8 @@ TF_GRACE_S = 10.0
 
 @dataclass(frozen=True)
 class Fault:
+    """Diagnosed simulation fault with categorization and evidence log snippet."""
+
     kind: str  # missing_package | missing_tf | unlinked_scan | goal_in_collision
     signature: str  # stable text used for rate limiting and the log
     evidence: str
@@ -78,6 +80,8 @@ class Fault:
 
 @dataclass
 class Observation:
+    """Telemetry and process state collected during a self-healing health check."""
+
     lines: list[str]  # new log lines since the last check
     snap: RosSnapshot | None
     alive: dict[str, bool]  # node process name -> running
@@ -87,6 +91,7 @@ class Observation:
 
 
 def classify(obs: Observation) -> list[Fault]:
+    """Inspect recent logs and topic snapshots to detect actionable simulation faults."""
     faults: dict[str, Fault] = {}
 
     def add(kind: str, sig: str, ev: str) -> None:
@@ -139,12 +144,15 @@ def classify(obs: Observation) -> list[Fault]:
 
 @dataclass(frozen=True)
 class Action:
+    """Corrective action planned by the self-healer to resolve a simulation fault."""
+
     kind: str  # report | restart_node | snap_goal
     target: str = ""
     detail: dict[str, object] = field(default_factory=dict)
 
 
 def plan_recovery(f: Fault) -> Action:
+    """Select the optimal recovery action for a given fault."""
     if f.kind == "missing_package":
         return Action(
             "report",
@@ -252,6 +260,8 @@ def nearest_free(
 
 @dataclass
 class RateLimit:
+    """Sliding-window rate limiter for self-healing actions."""
+
     cooldown_s: float = 15.0
     max_attempts: int = 3
     window_s: float = 300.0

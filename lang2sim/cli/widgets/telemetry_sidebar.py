@@ -5,6 +5,7 @@ File: lang2sim/cli/widgets/telemetry_sidebar.py
 
 from dataclasses import dataclass
 
+from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.widget import Widget
 from textual.widgets import Static
@@ -12,6 +13,8 @@ from textual.widgets import Static
 
 @dataclass
 class TelemetryData:
+    """Current robot state and metrics displayed in the telemetry sidebar."""
+
     # Filled from GET /v1/telemetry/live (lang2sim.telemetry.live.sidebar_fields).
     sim_state: str = "No simulation"
     sim_time: str = "--:--"
@@ -39,11 +42,11 @@ class TelemetrySidebar(Widget):
     }
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(id="telemetry-sidebar", **kwargs)
         self.data = TelemetryData()
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         with Vertical():
             yield Static("[bold #f1f2f6]SIMULATION[/]", classes="sidebar-section-title")
             yield Static(self._format_sim_state(), id="sim-state", classes="sidebar-metric")

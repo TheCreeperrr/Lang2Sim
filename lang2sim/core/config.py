@@ -68,7 +68,7 @@ MIN_WALL_STANDOFF = 0.50  # meters
 MAP_RESOLUTION = 0.05  # meters per pixel
 
 
-def ensure_directories():
+def ensure_directories() -> None:
     """Ensure ~/.lang2sim and projects directory exist."""
     DEFAULT_LANG2SIM_ROOT.mkdir(parents=True, exist_ok=True)
     PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
@@ -111,7 +111,7 @@ def get_catalog_dir() -> Path:
 class Config:
     """Object-oriented wrapper around configuration settings."""
 
-    def __init__(self, workspace_root: Path | None = None):
+    def __init__(self, workspace_root: Path | None = None) -> None:
         self.workspace_root = workspace_root or Path(__file__).resolve().parent.parent.parent
         self.catalog_dir = CATALOG_DIR
         pkg_templates = Path(__file__).resolve().parent.parent / "compiler" / "templates"
@@ -134,11 +134,13 @@ class Config:
         self.map_resolution = MAP_RESOLUTION
 
     def get_project_dir(self, project_name: str = "active_project") -> Path:
+        """Create and return the directory for a project."""
         return get_active_project_dir(project_name)
 
     def create_run_dir(
         self, project_name: str = "active_project", timestamp: str | None = None
     ) -> Path:
+        """Create and return a timestamped run directory for a project."""
         return get_run_dir(project_name, timestamp)
 
 

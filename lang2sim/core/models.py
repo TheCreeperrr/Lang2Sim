@@ -3,6 +3,8 @@ Canonical Simulation Specification Schemas and Control API Data Contracts.
 File: lang2sim/core/models.py
 """
 
+from __future__ import annotations
+
 import math
 from typing import Any, Literal
 
@@ -23,7 +25,15 @@ class Pose2D(BaseModel):
     )
 
     @classmethod
-    def from_anchor(cls, anchor: Any) -> "Pose2D":
+    def from_anchor(
+        cls,
+        anchor: (
+            list[int | float | str]
+            | tuple[int | float | str, ...]
+            | dict[str, int | float | str]
+            | Pose2D
+        ),
+    ) -> Pose2D:
         """Convert either a list [x, y, yaw] or a dict {'x':..., 'y':..., 'yaw':...}."""
         if isinstance(anchor, (list, tuple)):
             yaw = float(anchor[2]) if len(anchor) > 2 else 0.0

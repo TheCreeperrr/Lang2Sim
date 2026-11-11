@@ -73,6 +73,14 @@ class _Task:
 
 
 class NavDispatcher:
+    """Thread-safe Nav2 goal dispatcher.
+
+    Owns a single ``BasicNavigator`` worker thread. API callers on any thread
+    enqueue commands via ``go_to`` / ``follow`` / ``set_initial_pose``; the
+    worker thread executes them sequentially, with the newest command preempting
+    the current one.
+    """
+
     def __init__(
         self,
         navigator_factory: Callable[[], Any] = _ros_navigator,
@@ -212,7 +220,7 @@ class NavDispatcher:
             message=None,
         )
 
-    def _leg(self, pose: Pose2D, timeout_s: float):
+    def _leg(self, pose: Pose2D, timeout_s: float) -> tuple[str, str | None]:
         nav = self._nav
         if not nav.goToPose(self._make_pose(nav, pose)):
             return "failed", "goal rejected by Nav2 (bt_navigator not active?)"

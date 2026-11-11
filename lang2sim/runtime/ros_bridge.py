@@ -25,6 +25,7 @@ import threading
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from lang2sim.runtime import robot_instrument
@@ -45,6 +46,7 @@ GROUND_TRUTH_STALE_S = (
 
 
 def yaw_from_quaternion(x: float, y: float, z: float, w: float) -> float:
+    """Extract planar Euler yaw angle in radians from a quaternion (x, y, z, w)."""
     return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
 
 
@@ -60,6 +62,8 @@ def rtf_from_samples(samples: Sequence[tuple[float, float]]) -> float | None:
 
 @dataclass
 class RosSnapshot:
+    """Atomic snapshot of active ROS 2 topics and localization state."""
+
     now: float = 0.0  # wall time of the snapshot
     clock_wall: float | None = None  # wall time of the last /clock
     sim_time: float = 0.0
@@ -76,6 +80,7 @@ class RosSnapshot:
     spawn: tuple[float, float, float] | None = None  # odom frame origin in world
 
     def fresh(self, t: float | None) -> bool:
+        """Check whether a wall-clock timestamp is within the snapshot freshness window."""
         return t is not None and self.now - t <= FRESH_S
 
 
@@ -174,13 +179,14 @@ class RosBridge:
 
     @classmethod
     def try_create(cls) -> RosBridge | None:
+        """Create the ROS bridge, returning ``None`` if ROS initialization is unavailable."""
         try:
             return cls()
         except Exception:  # noqa: BLE001 - no ROS here (host tests) or rclpy failed to init
             return None
 
     # --- callbacks (executor threads) -------------------------------------
-    def _on_clock(self, msg) -> None:
+    def _on_clock(self, msg: Any) -> None:
         now = time.time()
         sim = msg.clock.sec + msg.clock.nanosec * 1e-9
         with self._lock:
@@ -189,7 +195,7 @@ class RosBridge:
             while self._clock_samples and now - self._clock_samples[0][0] > RTF_WINDOW_S:
                 self._clock_samples.popleft()
 
-    def _on_odom(self, msg) -> None:
+    def _on_odom(self, msg: Any) -> None:
         p, q, t = msg.pose.pose.position, msg.pose.pose.orientation, msg.twist.twist
         now = time.time()
         with self._lock:
@@ -212,20 +218,20 @@ class RosBridge:
         ref = last_gt if last_gt is not None else self._record_wall0
         return now - ref > GROUND_TRUTH_STALE_S
 
-    def _on_ground_truth(self, msg) -> None:
+    def _on_ground_truth(self, msg: Any) -> None:
         p, q = msg.pose.pose.position, msg.pose.pose.orientation
         with self._lock:
             self._s.ground_truth_wall = time.time()
             self._s.ground_truth = (p.x, p.y, yaw_from_quaternion(q.x, q.y, q.z, q.w))
         self._record(stamp_s(msg.header.stamp))
 
-    def _on_scan(self, msg) -> None:
+    def _on_scan(self, msg: Any) -> None:
         m = min_valid_range(msg.ranges, msg.range_min, msg.range_max)
         with self._lock:
             self._s.scan_wall = time.time()
             self._s.scan_min = m
 
-    def _on_contacts(self, msg) -> None:
+    def _on_contacts(self, msg: Any) -> None:
         entries = []
         for c in msg.contacts:
             forces = []
@@ -280,7 +286,7 @@ class RosBridge:
             fut = client.call_async(self._GetState.Request())
             fut.add_done_callback(lambda f, n=name: self._on_state(n, f))
 
-    def _on_state(self, name: str, fut) -> None:
+    def _on_state(self, name: str, fut: Any) -> None:
         try:
             label = fut.result().current_state.label
         except Exception:  # noqa: BLE001
@@ -290,6 +296,7 @@ class RosBridge:
 
     # --- API ---------------------------------------------------------------
     def snapshot(self) -> RosSnapshot:
+        """Return a thread-safe copy of current ROS state with an updated timestamp and RTF."""
         with self._lock:
             s = RosSnapshot(
                 **{k: (dict(v) if isinstance(v, dict) else v) for k, v in vars(self._s).items()}
@@ -316,14 +323,16 @@ class RosBridge:
         label: str,
         goal: tuple[float, float, float] | None = None,
         rate_hz: float = 20.0,
-        stream_path: Any = None,
+        stream_path: Path | None = None,
     ) -> None:
+        """Begin recording telemetry and optionally stream samples to a JSONL file."""
         with self._lock:
             spawn = self._s.spawn
         self._record_wall0 = time.time()
         self.recorder.start(label, goal=goal, rate_hz=rate_hz, spawn=spawn, stream_path=stream_path)
 
     def record_stop(self, keep_partial: bool = False) -> dict[str, Any] | None:
+        """Stop telemetry recording and return its result, optionally keeping partial data."""
         return self.recorder.stop(keep_partial=keep_partial)
 
     def live(self, goal: tuple[float, float, float] | None = None) -> dict[str, Any]:
@@ -345,6 +354,7 @@ class RosBridge:
         )
 
     def stop(self) -> None:
+        """Shut down the ROS executor and destroy its node, ignoring teardown errors."""
         try:
             self._executor.shutdown(timeout_sec=2)
             self.node.destroy_node()

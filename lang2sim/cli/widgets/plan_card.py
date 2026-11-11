@@ -5,6 +5,7 @@ File: lang2sim/cli/widgets/plan_card.py
 
 from typing import Any
 
+from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widget import Widget
 from textual.widgets import Static
@@ -54,7 +55,7 @@ class PlanCard(Widget):
         steps: list[str],
         title: str = "Autonomous Execution Plan",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.plan_title = title
         # Each step: {"title": str, "status": "pending"|"running"|"completed"|"failed", "detail": ""}
@@ -64,7 +65,7 @@ class PlanCard(Widget):
         if self.steps:
             self.steps[0]["status"] = "running"
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         with Horizontal(classes="plan-header"):
             yield Static(f"📋 [bold #f1f2f6]{self.plan_title}[/]", classes="plan-title")
             yield Static(self._format_counter(), id="plan-counter", classes="plan-counter")

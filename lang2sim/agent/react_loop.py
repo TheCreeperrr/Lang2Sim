@@ -86,23 +86,31 @@ Never print raw invocation phrases. Always use the ```tool ``` block. When tool 
 
 @dataclass
 class ThoughtChunk:
+    """Partial streaming chunk of the model's internal reasoning block."""
+
     chunk: str
 
 
 @dataclass
 class ThoughtCompleted:
+    """Completed reasoning block emitted by the LLM."""
+
     duration_str: str
     thought: str
 
 
 @dataclass
 class PlanCreated:
+    """High-level execution plan generated for multi-step task execution."""
+
     title: str
     steps: list[str]
 
 
 @dataclass
 class PlanStepUpdated:
+    """Status update for an individual step within an execution plan."""
+
     step_index: int
     status: str
     detail: str = ""
@@ -110,6 +118,8 @@ class PlanStepUpdated:
 
 @dataclass
 class PermissionRequested:
+    """User confirmation request before executing a sensitive or modifying tool."""
+
     event_id: str
     tool_name: str
     command: str
@@ -118,6 +128,8 @@ class PermissionRequested:
 
 @dataclass
 class CommandExecuted:
+    """Result of an executed terminal or container command."""
+
     event_id: str
     tool_name: str
     command: str
@@ -129,12 +141,16 @@ class CommandExecuted:
 
 @dataclass
 class ActionStarted:
+    """Event triggered immediately prior to executing an agent tool call."""
+
     tool_name: str
     arguments: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class ActionCompleted:
+    """Event triggered after a tool call completes execution."""
+
     tool_name: str
     duration_str: str
     output: Any
@@ -143,11 +159,15 @@ class ActionCompleted:
 
 @dataclass
 class ContentChunk:
+    """Incremental streaming token chunk of the user-facing response."""
+
     chunk: str
 
 
 @dataclass
 class TurnCompleted:
+    """Final outcome of an agent ReAct interaction turn."""
+
     full_content: str
     thought: str | None = None
     thought_duration_str: str | None = None
@@ -164,7 +184,7 @@ class ReActSupervisor:
         self,
         client: NemotronClient | None = None,
         workspace_name: str = "active_project",
-    ):
+    ) -> None:
         self.client = client or NemotronClient()
         self.workspace_name = workspace_name
 
@@ -658,18 +678,21 @@ class ReActSupervisor:
         return extracted
 
     def add_user_message(self, content: str) -> None:
+        """Append a user message and persist the updated conversation context."""
         if not hasattr(self, "messages"):
             self.messages = [{"role": "system", "content": SUPERVISOR_SYSTEM_PROMPT}]
         self.messages.append({"role": "user", "content": content})
         self._persist_context()
 
     def add_assistant_message(self, content: str) -> None:
+        """Append an assistant message and persist the updated conversation context."""
         if not hasattr(self, "messages"):
             self.messages = [{"role": "system", "content": SUPERVISOR_SYSTEM_PROMPT}]
         self.messages.append({"role": "assistant", "content": content})
         self._persist_context()
 
-    def run_tool(self, tool_name: str, **kwargs) -> dict[str, Any]:
+    def run_tool(self, tool_name: str, **kwargs: Any) -> dict[str, Any]:
+        """Execute a registered tool and persist its result in the conversation."""
         result = execute_tool(tool_name, **kwargs)
         if not hasattr(self, "messages"):
             self.messages = [{"role": "system", "content": SUPERVISOR_SYSTEM_PROMPT}]

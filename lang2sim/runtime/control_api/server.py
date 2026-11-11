@@ -45,9 +45,12 @@ import signal
 import subprocess
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import AsyncIterator, Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from lang2sim.runtime.nav2_dispatcher import NavDispatcher
 
 from fastapi import (
     APIRouter,
@@ -128,7 +131,9 @@ def tb3_gazebo_share() -> Path | None:
 
 
 class WorldRejected(Exception):
-    def __init__(self, report: world_check.WorldReport):
+    """Raised when an SDF world fails pre-flight validation checks before launch."""
+
+    def __init__(self, report: world_check.WorldReport) -> None:
         super().__init__(report.summary())
         self.report = report
 
@@ -370,7 +375,7 @@ def create_app(
     heal_enabled = os.getenv("L2S_SELF_HEAL", "1") != "0"
 
     @contextlib.asynccontextmanager
-    async def lifespan(_app: FastAPI):
+    async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         stop = threading.Event()
         if use_ros:
             from lang2sim.runtime.ros_bridge import RosBridge
@@ -442,7 +447,7 @@ def create_app(
             health_status=health,
         )
 
-    def dispatcher():
+    def dispatcher() -> NavDispatcher:
         if state["nav"] is None:
             from lang2sim.runtime.nav2_dispatcher import NavDispatcher
 
@@ -484,7 +489,7 @@ def create_app(
             state["nodes"].stop_all()
         nodes = make_nodes(Path(req.run_dir))
 
-        def current_goal():
+        def current_goal() -> Pose2D | None:
             st = state["nav"].status() if state["nav"] else None
             return st.target_pose if st and (st.is_active or st.status == "failed") else None
 
@@ -638,7 +643,7 @@ def create_app(
         clear_spawn_log()
         set_spawn_log_file(str(logs_dir / "spawns.jsonl") if logs_dir is not None else None)
 
-    def recording_bridge():
+    def recording_bridge() -> Any:
         bridge = state["bridge"]
         if bridge is None or not hasattr(bridge, "record_start"):
             raise HTTPException(

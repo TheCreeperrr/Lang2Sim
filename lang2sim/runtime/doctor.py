@@ -37,6 +37,8 @@ MIN_DOCKER_CPUS = 4
 
 @dataclass(frozen=True)
 class CheckResult:
+    """Result of a single pre-flight check with its status and optional fix hint."""
+
     name: str
     status: Status
     detail: str
@@ -61,6 +63,12 @@ def run_checks(
     runner: DockerRunner | None = None,
     check_api: bool = False,
 ) -> list[CheckResult]:
+    """Run all pre-flight checks and return a list of results.
+
+    Checks Docker installation and daemon reachability, display availability,
+    NVIDIA toolkit, image presence, port availability, and host resources.
+    Pass ``check_api=True`` to also probe a running control API.
+    """
     plat = plat or host_platform.detect()
     hw = hw or hardware_probe.probe()
     runner = runner or DockerRunner()
@@ -266,6 +274,7 @@ async def _check_api() -> CheckResult:
 
 
 def format_report(results: list[CheckResult]) -> str:
+    """Format check results as a human-readable text report."""
     icon = {"ok": "✓", "warn": "!", "fail": "✗"}
     lines = []
     for c in results:
@@ -290,10 +299,12 @@ def format_report(results: list[CheckResult]) -> str:
 
 
 def exit_code(results: list[CheckResult]) -> int:
+    """Return 1 if any check failed, 0 otherwise."""
     return 1 if any(c.status == "fail" for c in results) else 0
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Entry point for ``lang2sim doctor``; prints report and returns an exit code."""
     ap = argparse.ArgumentParser(prog="lang2sim doctor")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--display", choices=DISPLAY_MODES)

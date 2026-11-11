@@ -36,7 +36,11 @@ import webbrowser
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from lang2sim.runtime.control_api.client import NavState
+    from lang2sim.runtime.session import SimSession
 
 COMMANDS = ("mission", "stress", "benchmark", "report", "status", "dashboard", "replay", "help")
 DEMO_RUN = Path(__file__).resolve().parents[2] / "catalog" / "demo_runs" / "empty_room_benchmark"
@@ -58,6 +62,8 @@ You can also just say it: [italic]"drop the lights to 10% and spawn a crate in f
 # --------------------------------------------------------------------------- parsing
 @dataclass
 class Command:
+    """Parsed TUI command invocation with arguments and options."""
+
     name: str
     args: list[str] = field(default_factory=list)
     opts: dict[str, str] = field(default_factory=dict)
@@ -261,12 +267,12 @@ class DemoRunner:
         self._replay_server = None
 
     # --- plumbing ----------------------------------------------------------
-    def _session(self, run_dir: Path | None = None):
+    def _session(self, run_dir: Path | None = None) -> SimSession:
         from lang2sim.runtime.session import SimSession
 
         return SimSession.attach(self.base_url, run_dir)
 
-    async def _run_info(self, session) -> dict[str, Any]:
+    async def _run_info(self, session: SimSession) -> dict[str, Any]:
         info = await session.api._request("GET", "/run")
         if not info.get("loaded"):
             raise RuntimeError(
@@ -274,7 +280,7 @@ class DemoRunner:
             )
         return info
 
-    async def _host_run_dir(self, session) -> Path:
+    async def _host_run_dir(self, session: SimSession) -> Path:
         from lang2sim.runtime.session import host_run_dir
 
         info = await self._run_info(session)
@@ -556,7 +562,7 @@ class DemoRunner:
         )
 
     # --- helpers -------------------------------------------------------------
-    async def _back_to_start(self, s, run_dir: Path) -> None:
+    async def _back_to_start(self, s: SimSession, run_dir: Path) -> None:
         from lang2sim.core.models import SimSpec
 
         spec = SimSpec.model_validate_json((run_dir / "spec.json").read_text())
@@ -566,7 +572,7 @@ class DemoRunner:
             self.say("Returning to the start pose first (not recorded)…")
             await s.return_to_start(run_dir)
 
-    def _nav_progress(self, st) -> None:
+    def _nav_progress(self, st: NavState) -> None:
         if st.is_active:
             self.progress(
                 f"[#8b98a8]  ▸ driving · waypoint {st.waypoint_index + 1}/{st.waypoints_total} · "

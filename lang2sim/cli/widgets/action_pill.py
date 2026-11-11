@@ -3,6 +3,7 @@ Tool Action Status Pill Widget
 File: lang2sim/cli/widgets/action_pill.py
 """
 
+from textual.app import ComposeResult
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Static
@@ -27,13 +28,13 @@ class ActionPill(Widget):
 
     def __init__(
         self, tool_name: str, duration_str: str = "0.4s", status: str = "completed", **kwargs
-    ):
+    ) -> None:
         super().__init__(classes="action-pill", **kwargs)
         self.tool_name = tool_name
         self.duration_str = duration_str
         self.status = status
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         yield Static(self._format_content(), id="pill-content")
 
     def _format_content(self) -> str:

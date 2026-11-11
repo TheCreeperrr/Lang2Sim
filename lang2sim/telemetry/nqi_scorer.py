@@ -27,7 +27,11 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from rich.console import Console
+    from rich.table import Table
 
 import numpy as np
 
@@ -116,18 +120,21 @@ class OccupancyGrid:
 
     # world <-> grid (row, col)
     def world_to_cell(self, x: float, y: float) -> tuple[int, int]:
+        """Convert world coordinates to an occupancy-grid (row, column)."""
         h = self.occupied.shape[0]
         col = int(math.floor((x - self.origin[0]) / self.resolution))
         row_from_bottom = int(math.floor((y - self.origin[1]) / self.resolution))
         return h - 1 - row_from_bottom, col
 
     def cell_to_world(self, row: int, col: int) -> tuple[float, float]:
+        """Return the world coordinates at the center of an occupancy-grid cell."""
         h = self.occupied.shape[0]
         x = self.origin[0] + (col + 0.5) * self.resolution
         y = self.origin[1] + (h - 1 - row + 0.5) * self.resolution
         return x, y
 
     def in_bounds(self, row: int, col: int) -> bool:
+        """Check whether a row and column identify a cell in the grid."""
         h, w = self.occupied.shape
         return 0 <= row < h and 0 <= col < w
 
@@ -536,6 +543,7 @@ def build_report(
 
 
 def default_report_path(project_name: str = "active_project", timestamp: str | None = None) -> Path:
+    """Determine destination file path for benchmark_report.json."""
     run_dir = os.environ.get("LANG2SIM_RUN_DIR")
     if run_dir:
         return Path(run_dir).expanduser() / "benchmark_report.json"
@@ -551,6 +559,7 @@ def default_report_path(project_name: str = "active_project", timestamp: str | N
 
 
 def write_report(report: Mapping[str, Any], path: str | Path | None = None) -> Path:
+    """Serialize the benchmark evaluation report to disk as JSON."""
     out = Path(path) if path is not None else default_report_path()
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -558,7 +567,7 @@ def write_report(report: Mapping[str, Any], path: str | Path | None = None) -> P
 
 
 # --------------------------------------------------------------------------- rich output
-def _fmt(v: Any, unit: str = "", digits: int = 2) -> str:
+def _fmt(v: int | float | str | None, unit: str = "", digits: int = 2) -> str:
     if v is None:
         return "n/a"
     if isinstance(v, float):
@@ -566,7 +575,7 @@ def _fmt(v: Any, unit: str = "", digits: int = 2) -> str:
     return f"{v}{unit}"
 
 
-def _mission_str(s: Any) -> str:
+def _mission_str(s: int | None) -> str:
     return {1: "[green]Succeeded[/]", 0: "[red]Failed[/]"}.get(s, "n/a")
 
 
@@ -579,7 +588,7 @@ def _delta_str(pct: float | None, higher_is_better: bool, note: str = "") -> str
     return f"[{color}]{pct:+.1f}%[/]{suffix}"
 
 
-def render_comparison_table(report: Mapping[str, Any]):
+def render_comparison_table(report: Mapping[str, Any]) -> Table:
     """Build a Rich table mirroring the architecture's §8.4 benchmark table."""
     from rich.table import Table
 
@@ -680,7 +689,7 @@ def render_comparison_table(report: Mapping[str, Any]):
             _delta_str(deltas.get("ate_mean_pct"), False),
         )
 
-        def _health_str(div: Any) -> str:
+        def _health_str(div: bool | None) -> str:
             if div is None:
                 return "n/a"
             return "[red]Diverged (>0.35 m)[/]" if div else "[green]Healthy (≤0.35 m)[/]"
@@ -694,7 +703,8 @@ def render_comparison_table(report: Mapping[str, Any]):
     return table
 
 
-def render_to_console(report: Mapping[str, Any], console: Any = None) -> None:
+def render_to_console(report: Mapping[str, Any], console: Console | None = None) -> None:
+    """Print the formatted NQI benchmark comparison table to the terminal."""
     from rich.console import Console
 
     (console or Console()).print(render_comparison_table(report))

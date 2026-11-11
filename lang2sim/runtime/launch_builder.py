@@ -31,6 +31,8 @@ LAUNCH_FILE = "sim_launch.py"
 
 @dataclass(frozen=True)
 class LaunchConfig:
+    """All settings baked into a generated ``sim_launch.py`` for one simulation run."""
+
     run_dir: str  # container path; logs and generated params go here
     world_sdf: str  # container path, already checked/normalized
     world_name: str
@@ -142,6 +144,7 @@ def render(cfg: LaunchConfig) -> str:
 
 
 def write(cfg: LaunchConfig, out_dir: Path | None = None) -> Path:
+    """Render the launch file for ``cfg`` and write it to ``out_dir`` (or ``cfg.run_dir``)."""
     path = Path(out_dir or cfg.run_dir) / LAUNCH_FILE
     path.write_text(render(cfg), encoding="utf-8")
     return path

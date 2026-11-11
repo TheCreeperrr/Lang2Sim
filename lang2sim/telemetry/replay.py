@@ -59,6 +59,8 @@ REACHED_M = 0.35  # a waypoint counts as reached within this distance
 
 @dataclass
 class PlayedRun:
+    """Pre-computed trajectory samples and obstacles for replay playback."""
+
     label: str
     t: np.ndarray  # sim seconds (as recorded)
     x: np.ndarray
@@ -99,6 +101,7 @@ def _crate_times(
 def build_played_run(
     label: str, data: dict[str, Any], run_dir: Path, spec: Any, report: dict[str, Any] | None
 ) -> PlayedRun:
+    """Build a PlayedRun instance with clearances and waypoint targets from trajectory data."""
     traj = Trajectory.from_dict(data)
     meta = data.get("meta") or {}
     occupancy = load_occupancy(run_dir)
@@ -242,6 +245,7 @@ def snapshot(clock: ReplayClock, now: float | None = None) -> dict[str, Any]:
 def load_replay(
     run_dir: Path, which: str = "both", speed: float = 1.0, loop: bool = False
 ) -> ReplayClock:
+    """Load recorded trajectories and construct a playback ReplayClock."""
     from lang2sim.core.models import SimSpec
 
     run_dir = Path(run_dir)
@@ -260,7 +264,10 @@ def load_replay(
     return ReplayClock(runs=[r for r in runs if len(r.t) >= 2], speed=max(0.05, speed), loop=loop)
 
 
-def create_replay_app(run_dir: Path, which: str = "both", speed: float = 1.0, loop: bool = False):
+def create_replay_app(
+    run_dir: Path, which: str = "both", speed: float = 1.0, loop: bool = False
+) -> FastAPI:
+    """Create a FastAPI app serving replay endpoints mimicking the control API."""
     if FastAPI is None:
         raise ImportError("the replay server needs FastAPI: pip install -e '.[sim]'")
     import lang2sim
@@ -399,6 +406,7 @@ def create_replay_app(run_dir: Path, which: str = "both", speed: float = 1.0, lo
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    """CLI entrypoint to launch the replay fallback web server."""
     ap = argparse.ArgumentParser(
         description="Replay a recorded Lang2Sim run through the control API "
         "(demo fallback when the live sim is down)."

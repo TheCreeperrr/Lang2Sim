@@ -3,6 +3,7 @@ Input Card Widget (Floating & Sticky Docked)
 File: lang2sim/cli/widgets/prompt_card.py
 """
 
+from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.message import Message
 from textual.widget import Widget
@@ -66,12 +67,12 @@ class PromptCard(Widget):
         placeholder: str = "Ask anything.. 'Spawn 14x10m warehouse with 8 racks, send AMR to rack 5'",
         card_id: str = "prompt-input",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__(**kwargs)
         self.placeholder_text = placeholder
         self.card_id = card_id
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         with Vertical():
             yield Input(placeholder=self.placeholder_text, id=self.card_id)
             yield Static(

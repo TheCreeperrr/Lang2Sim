@@ -83,7 +83,9 @@ class RecordedRun:
 
 
 class SimNotReady(RuntimeError):
-    def __init__(self, status: SimStatusResponse, logs: str = ""):
+    """Raised when an operation is attempted while Gazebo or Nav2 is not yet ready."""
+
+    def __init__(self, status: SimStatusResponse, logs: str = "") -> None:
         failed = [k for k, v in status.readiness.items() if not v]
         super().__init__(f"simulation {status.status}, not ready: {', '.join(failed) or 'unknown'}")
         self.status, self.logs = status, logs
@@ -123,6 +125,8 @@ def copy_fixture(name: str, project: str | None = None) -> Path:
 
 
 class SimSession:
+    """Manages the full lifecycle of a containerized simulation and its control API connection."""
+
     def __init__(
         self,
         plan: DisplayPlan,
@@ -134,7 +138,7 @@ class SimSession:
         extra_env: dict[str, str] | None = None,
         runner: DockerRunner | None = None,
         opts: RunOptions | None = None,
-    ):
+    ) -> None:
         self.plan = plan
         self.runner = runner or DockerRunner()
         base = opts or default_run_options(
@@ -159,6 +163,7 @@ class SimSession:
 
     @property
     def view_hint(self) -> str:
+        """Return a connection hint for the session's configured display mode."""
         if self.plan.mode == "vnc":
             return f"open http://localhost:{self.opts.novnc_port} in a browser"
         if self.plan.mode == "headless":
@@ -166,6 +171,7 @@ class SimSession:
         return "Gazebo and RViz open as windows on this desktop"
 
     async def start(self, pull: bool = True, wait_s: float = 120) -> dict:
+        """Optionally pull the image, start the container, and await API readiness."""
         if pull:
             self.runner.ensure_image(self.opts.image)
         self.runner.start(self.opts)
@@ -420,6 +426,7 @@ class SimSession:
         return report
 
     async def stop(self) -> None:
+        """Stop an owned simulation or close only the client for an attached session."""
         if self.runner is None:  # attached session: the sim is not ours to stop
             await self.api.aclose()
             return
@@ -434,5 +441,6 @@ class SimSession:
         await self.start()
         return self
 
-    async def __aexit__(self, *exc) -> None:
+    async def __aexit__(self, *exc: object) -> None:
+        """Stop the session when leaving an async context manager."""
         await self.stop()

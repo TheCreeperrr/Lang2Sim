@@ -181,7 +181,7 @@ def _find_window_rect_windows(title_pattern: str) -> tuple[int, int, int, int] |
 
         matched_hwnd = None
 
-        def enum_windows_callback(hwnd, extra):
+        def enum_windows_callback(hwnd: int, extra: Any) -> None:
             nonlocal matched_hwnd
             if win32gui.IsWindowVisible(hwnd):
                 title = win32gui.GetWindowText(hwnd)
@@ -361,7 +361,7 @@ class CameraSampler:
                 rclpy.init(args=None)
             node = rclpy.create_node("lang2sim_vision_sampler")
 
-            def _callback(msg: RosImage):
+            def _callback(msg: RosImage) -> None:
                 t_now = time.time()
                 dt = t_now - self.last_timestamp
                 if dt > 0:
@@ -433,6 +433,7 @@ _GLOBAL_SAMPLER: CameraSampler | None = None
 
 
 def get_camera_sampler(topic: str = "/camera/image_raw") -> CameraSampler:
+    """Return the global singleton camera observer instance for the specified ROS image topic."""
     global _GLOBAL_SAMPLER
     if _GLOBAL_SAMPLER is None or _GLOBAL_SAMPLER.topic != topic:
         _GLOBAL_SAMPLER = CameraSampler(topic)

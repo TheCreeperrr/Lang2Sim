@@ -16,7 +16,7 @@ def solve_spatial_layout(
     dimensions: dict[str, float] | None = None,
     objects: list | None = None,
     room_dimensions: dict[str, float] | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Runs Shapely 2.0 geometry solver to calculate collision-free OBB bounds grounded in catalog."""
     try:
@@ -311,7 +311,7 @@ def generate_zero_slam_map(
     output_dir: str | None = None,
     resolution: float = 0.05,
     active_project_dir: str | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Direct 3D geometric slicing to map.yaml and map.pgm with real obstacle footprints."""
     t0 = time.time()
@@ -393,7 +393,7 @@ def launch_simulation_stack(
     robot_model: str = "turtlebot3_waffle",
     sdf_path: str | None = None,
     headless: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Dispatches real Gazebo Harmonic GUI and ROS 2 Nav2 simulation stack via Part 3 SimSession."""
     import json
@@ -513,7 +513,7 @@ def launch_simulation_stack(
     }
 
 
-def inspect_topic_health(topic_name: str = "/scan", **kwargs) -> dict[str, Any]:
+def inspect_topic_health(topic_name: str = "/scan", **kwargs: Any) -> dict[str, Any]:
     """Verifies topic publication rates and active publisher count dynamically from Control API or container."""
     import json
     import re
@@ -950,7 +950,7 @@ def replace_file_content(path: str, target: str, replacement: str) -> dict[str, 
         return {"status": "error", "message": str(e)}
 
 
-def search_catalog(query: str = "", category: str = "all", **kwargs) -> dict[str, Any]:
+def search_catalog(query: str = "", category: str = "all", **kwargs: Any) -> dict[str, Any]:
     """Semantic and keyword search engine for example SDF scenes, world environments, and basic physical 3D blocks."""
     import json
 
@@ -1018,7 +1018,11 @@ def search_catalog(query: str = "", category: str = "all", **kwargs) -> dict[str
 
 
 def send_navigation_goal(
-    x: float = 2.0, y: float = 2.0, yaw: float = 0.0, timeout: float = 60.0, **kwargs
+    x: float = 2.0,
+    y: float = 2.0,
+    yaw: float = 0.0,
+    timeout: float = 60.0,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Dispatches an autonomous Nav2 navigation goal to drive the robot to specified coordinates."""
     import json
@@ -1091,7 +1095,7 @@ MUTATING_TOOLS = {
 }
 
 
-def execute_tool(name: str, **kwargs) -> dict[str, Any]:
+def execute_tool(name: str, **kwargs: Any) -> dict[str, Any]:
     """Executes a tool from the registry safely, passing only accepted arguments."""
     if name not in TOOL_REGISTRY:
         return {"status": "error", "message": f"Unknown tool: {name}"}

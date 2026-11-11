@@ -26,6 +26,8 @@ _PCI_VENDORS = {"0x10de": "nvidia", "0x8086": "intel", "0x1002": "amd"}
 
 @dataclass(frozen=True)
 class GpuInfo:
+    """GPU descriptor with vendor, name, and optional VRAM statistics."""
+
     vendor: GpuVendor
     name: str = ""
     vram_total_mb: int | None = None
@@ -34,6 +36,8 @@ class GpuInfo:
 
 @dataclass(frozen=True)
 class HardwareInfo:
+    """Snapshot of host hardware: CPU count, RAM, GPUs, and render-node paths."""
+
     cpu_count: int = 1
     mem_total_mb: int | None = None
     gpus: list[GpuInfo] = field(default_factory=list)
@@ -77,6 +81,7 @@ def parse_meminfo(text: str) -> int | None:
 
 
 def vendor_from_pci_id(vendor_id: str) -> GpuVendor:
+    """Map a PCI vendor ID hex string to a known GpuVendor literal."""
     return _PCI_VENDORS.get(vendor_id.strip().lower(), "unknown")  # type: ignore[return-value]
 
 

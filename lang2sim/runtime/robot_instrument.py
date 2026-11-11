@@ -46,6 +46,8 @@ CONTACT_HZ = 50
 
 
 class InstrumentError(ValueError):
+    """Raised when an instrumented robot model or sensor configuration cannot be generated."""
+
     pass
 
 

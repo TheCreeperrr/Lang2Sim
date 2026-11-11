@@ -14,7 +14,7 @@ from lang2sim.core.models import ObjectSpec, Pose2D, Vector3D
 class SceneCatalog:
     """Interface to inspect pre-built scenes, semantic anchors, and catalog models."""
 
-    def __init__(self, catalog_dir: Path | None = None):
+    def __init__(self, catalog_dir: Path | None = None) -> None:
         self.catalog_dir = catalog_dir or get_catalog_dir()
         self.catalog_file = self.catalog_dir / "scene_catalog.json"
         self._data: dict[str, Any] = self._load()

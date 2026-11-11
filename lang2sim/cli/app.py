@@ -184,7 +184,7 @@ class Lang2SimApp(App):
             self.notify("Emergency world reset dispatched", title="Simulation")
 
 
-def main():
+def main() -> None:
     """Console script entrypoint: lang2sim."""
     app = Lang2SimApp()
     app.run()

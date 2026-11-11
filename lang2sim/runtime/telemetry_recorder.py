@@ -52,6 +52,7 @@ IGNORED_CONTACT_ENTITIES = ("ground_plane", "ground", "floor", "world")
 
 
 def wrap_angle(a: float) -> float:
+    """Normalize an angle into [-pi, pi]."""
     return math.atan2(math.sin(a), math.cos(a))
 
 
@@ -91,6 +92,8 @@ def min_valid_range(ranges: Iterable[float], range_min: float, range_max: float)
 # --------------------------------------------------------------------------- contacts
 @dataclass
 class ContactEvent:
+    """Collision or contact event recorded during simulation traversal."""
+
     t: float
     entity: str
     force_n: float | None
@@ -429,6 +432,7 @@ def assemble_trajectory(
 
 
 def partial_path(logs_dir: Path, label: str) -> Path:
+    """Return the filesystem path for an in-flight partial trajectory log."""
     return Path(logs_dir) / f"trajectory_{label}{PARTIAL_SUFFIX}"
 
 
@@ -541,6 +545,7 @@ LABELS = ("nominal", "adversarial")
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
+    """Read and parse lines from a JSON lines file, ignoring malformed lines."""
     out: list[dict[str, Any]] = []
     try:
         for line in Path(path).read_text(encoding="utf-8").splitlines():

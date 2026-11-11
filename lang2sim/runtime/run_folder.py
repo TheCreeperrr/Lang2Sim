@@ -56,6 +56,7 @@ def load_manifest(run_dir: Path) -> RunManifest:
 
 
 def write_manifest(run_dir: Path, manifest: RunManifest) -> Path:
+    """Serialize a RunManifest object to manifest.json within the specified run directory."""
     path = Path(run_dir) / MANIFEST
     path.write_text(json.dumps(manifest.model_dump(mode="json"), indent=2) + "\n")
     return path

@@ -49,6 +49,8 @@ class SimulationStateSnapshot(BaseModel):
 
 
 class ChatMessage(BaseModel):
+    """Single conversational turn or tool interaction in a chat session."""
+
     id: str = Field(default_factory=lambda: str(uuid.uuid4())[:8])
     role: str  # "user", "assistant", "system", "tool"
     content: str = ""
@@ -62,6 +64,8 @@ class ChatMessage(BaseModel):
 
 
 class ChatSession(BaseModel):
+    """Complete conversational workspace session containing messages, artifacts, and state."""
+
     id: str = Field(
         default_factory=lambda: (
             datetime.now().strftime("session_%Y%m%d_%H%M%S_") + str(uuid.uuid4())[:4]
@@ -82,7 +86,7 @@ class ChatSession(BaseModel):
 class SessionManager:
     """Manages creation, persistence, retrieval, and grouping of chat sessions."""
 
-    def __init__(self, sessions_dir: Path | None = None):
+    def __init__(self, sessions_dir: Path | None = None) -> None:
         self.sessions_dir = sessions_dir or SESSIONS_DIR
         self.sessions_dir.mkdir(parents=True, exist_ok=True)
 
@@ -95,6 +99,7 @@ class SessionManager:
         workspace_name: str = "active_project",
         system_prompt: str | None = None,
     ) -> ChatSession:
+        """Create and persist a session, optionally seeding it with a system prompt."""
         session = ChatSession(title=title, workspace_name=workspace_name)
         if system_prompt:
             session.messages.append(ChatMessage(role="system", content=system_prompt))
@@ -102,6 +107,7 @@ class SessionManager:
         return session
 
     def get_session(self, session_id: str) -> ChatSession | None:
+        """Load a session by ID, returning ``None`` if it is missing or invalid."""
         p = self._file_path(session_id)
         if not p.is_file():
             return None
@@ -112,11 +118,13 @@ class SessionManager:
             return None
 
     def save_session(self, session: ChatSession) -> None:
+        """Update the session timestamp and write its JSON representation to disk."""
         session.updated_at = time.time()
         p = self._file_path(session.id)
         p.write_text(session.model_dump_json(indent=2), encoding="utf-8")
 
     def delete_session(self, session_id: str) -> bool:
+        """Delete a stored session, returning whether its file was removed."""
         p = self._file_path(session_id)
         if p.is_file():
             try:
@@ -127,6 +135,7 @@ class SessionManager:
         return False
 
     def pin_session(self, session_id: str, pinned: bool | None = None) -> bool:
+        """Set or toggle a session's pinned state and persist it."""
         session = self.get_session(session_id)
         if not session:
             return False
@@ -138,6 +147,7 @@ class SessionManager:
         return True
 
     def rename_session(self, session_id: str, new_title: str) -> bool:
+        """Rename a session, replacing blank titles with ``Untitled Session``."""
         session = self.get_session(session_id)
         if not session:
             return False

@@ -3,6 +3,7 @@ Screen 1: Landing Screen
 File: lang2sim/cli/screens/landing_screen.py
 """
 
+from textual.app import ComposeResult
 from textual.containers import Center, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Static
@@ -69,7 +70,7 @@ LOGO_TEXT = build_logo()
 class LandingScreen(Screen):
     """The initial landing screen matching the reference image."""
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         with Center(id="landing-container"):
             with Vertical(id="landing-inner"):
                 yield Static(LOGO_TEXT, id="landing-logo")

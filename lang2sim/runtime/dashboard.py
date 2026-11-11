@@ -28,7 +28,10 @@ import json
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from fastapi import APIRouter
 
 from lang2sim.runtime.telemetry_recorder import load_recorded_runs
 
@@ -39,6 +42,8 @@ MAX_POINTS = 1500
 
 
 class MapError(ValueError):
+    """Raised when an occupancy map cannot be found, parsed, or processed."""
+
     pass
 
 
@@ -115,6 +120,7 @@ def read_map(run_dir: Path, map_name: str = "map.yaml") -> dict[str, Any]:
 
 
 def read_mission(run_dir: Path) -> dict[str, Any] | None:
+    """Read mission poses and waypoints from a run's spec.json if present."""
     try:
         spec = json.loads((Path(run_dir) / "spec.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -149,6 +155,7 @@ def downsample(samples: list[dict[str, float]], max_points: int = MAX_POINTS) ->
 
 
 def trajectories_payload(run_dir: Path, max_points: int = MAX_POINTS) -> dict[str, Any]:
+    """Load and downsample recorded trajectory runs for dashboard visualization."""
     runs = load_recorded_runs(run_dir)
     out = {}
     for label, data in runs.items():
@@ -165,6 +172,7 @@ def trajectories_payload(run_dir: Path, max_points: int = MAX_POINTS) -> dict[st
 
 
 def read_report(run_dir: Path) -> dict[str, Any] | None:
+    """Load the benchmark report JSON from a run folder if scored."""
     try:
         return json.loads((Path(run_dir) / REPORT_NAME).read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -187,7 +195,7 @@ def make_router(
     mode: str,
     get_world: Callable[[], str] = lambda: "",
     get_spawned: Callable[[], list[dict[str, Any]]] = lambda: [],
-):
+) -> APIRouter:
     """FastAPI router with the page and the /v1/run data routes for whatever run get_run_dir() names."""
     from fastapi import APIRouter, HTTPException
     from fastapi.responses import HTMLResponse

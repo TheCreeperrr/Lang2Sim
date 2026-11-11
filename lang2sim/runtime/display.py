@@ -30,6 +30,8 @@ DISPLAY_MODES: tuple[str, ...] = ("x11", "wslg", "vnc", "headless")
 
 @dataclass(frozen=True)
 class DisplayPlan:
+    """Resolved graphical rendering and GPU acceleration strategy for the container."""
+
     mode: DisplayMode
     gpu: GpuMode
     foxglove: bool

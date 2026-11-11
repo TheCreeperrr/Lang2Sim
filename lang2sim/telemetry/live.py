@@ -20,6 +20,7 @@ DEFAULT_API = "http://127.0.0.1:9090"
 
 
 def api_base_url(base_url: str | None = None) -> str:
+    """Resolve the base HTTP URL of the active Lang2Sim control API."""
     return (base_url or os.environ.get("LANG2SIM_CONTROL_API") or DEFAULT_API).rstrip("/")
 
 

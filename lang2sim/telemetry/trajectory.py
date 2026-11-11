@@ -123,14 +123,17 @@ class Trajectory:
     # ------------------------------------------------------------ properties
     @property
     def ate_mean(self) -> float:
+        """Return mean absolute trajectory error, or zero when no error samples exist."""
         return float(np.mean(self.ate)) if self.ate is not None and len(self.ate) > 0 else 0.0
 
     @property
     def ate_max(self) -> float:
+        """Return maximum absolute trajectory error, or zero when unavailable."""
         return float(np.max(self.ate)) if self.ate is not None and len(self.ate) > 0 else 0.0
 
     @property
     def ate_rmse(self) -> float:
+        """Return root-mean-square trajectory error, or zero when unavailable."""
         return (
             float(np.sqrt(np.mean(self.ate**2)))
             if self.ate is not None and len(self.ate) > 0
@@ -139,10 +142,12 @@ class Trajectory:
 
     @property
     def n(self) -> int:
+        """Return the number of timestamped trajectory samples."""
         return int(self.t.shape[0])
 
     @property
     def duration(self) -> float:
+        """Return elapsed time between the first and last samples."""
         return float(self.t[-1] - self.t[0])
 
     @property
@@ -152,10 +157,12 @@ class Trajectory:
 
     @property
     def start(self) -> tuple[float, float]:
+        """Return the trajectory's initial (x, y) position."""
         return float(self.x[0]), float(self.y[0])
 
     @property
     def end(self) -> tuple[float, float]:
+        """Return the trajectory's final (x, y) position."""
         return float(self.x[-1]), float(self.y[-1])
 
     # ------------------------------------------------------------ transforms
@@ -206,6 +213,7 @@ class Trajectory:
     from_odom_samples = from_samples
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize trajectory metadata and per-sample values to a dictionary."""
         samples = []
         for i in range(self.n):
             s = {name: float(getattr(self, name)[i]) for name in _FIELDS}
@@ -232,6 +240,7 @@ class Trajectory:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Trajectory:
+        """Build a trajectory from the dictionary representation returned by ``to_dict``."""
         goal = data.get("goal")
         return cls.from_samples(
             data["samples"],
@@ -243,6 +252,7 @@ class Trajectory:
         )
 
     def to_json(self, path: str | Path) -> Path:
+        """Write the trajectory as JSON, creating parent directories as needed."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
@@ -250,6 +260,7 @@ class Trajectory:
 
     @classmethod
     def from_json(cls, path: str | Path) -> Trajectory:
+        """Load a trajectory from a JSON file."""
         return cls.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
 
     @classmethod

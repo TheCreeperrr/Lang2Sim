@@ -24,6 +24,8 @@ STALL_S = 5.0  # clock not advancing this long while the process runs = stalled
 
 @dataclass
 class HealthReport:
+    """Aggregated health assessment with RTF, sim time, and per-topic readiness flags."""
+
     health: Health
     issues: list[str] = field(default_factory=list)
     rtf: float | None = None
@@ -32,6 +34,8 @@ class HealthReport:
 
 
 class HealthMonitor:
+    """Stateful health evaluator that debounces low-RTF transients before reporting degraded."""
+
     def __init__(self, low_rtf: float = LOW_RTF, low_rtf_for_s: float = LOW_RTF_FOR_S) -> None:
         self.low_rtf, self.low_rtf_for_s = low_rtf, low_rtf_for_s
         self._low_since: float | None = None

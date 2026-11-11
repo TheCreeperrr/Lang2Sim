@@ -43,7 +43,9 @@ cfg = importlib.import_module("lang2sim.core.config")
 
 
 class ControlAPIError(RuntimeError):
-    def __init__(self, message: str, status_code: int | None = None):
+    """Base exception for HTTP errors returned by the simulation control API."""
+
+    def __init__(self, message: str, status_code: int | None = None) -> None:
         super().__init__(message)
         self.status_code = status_code
 
@@ -53,16 +55,19 @@ class ControlAPIUnavailable(ControlAPIError):
 
 
 def default_base_url() -> str:
+    """Return the default HTTP URL for the host control API connection."""
     return f"http://127.0.0.1:{cfg.DEFAULT_CONTROL_PORT}"
 
 
 class ControlClient:
+    """Asynchronous HTTP/WebSocket client for communicating with the simulation control API."""
+
     def __init__(
         self,
         base_url: str | None = None,
         timeout: float = 10.0,
         transport: httpx.AsyncBaseTransport | None = None,
-    ):
+    ) -> None:
         self.base_url = (base_url or default_base_url()).rstrip("/")
         self._http = httpx.AsyncClient(
             base_url=self.base_url + API_PREFIX, timeout=timeout, transport=transport

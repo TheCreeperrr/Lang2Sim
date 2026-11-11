@@ -3,6 +3,7 @@ Collapsible Thought Box Widget
 File: lang2sim/cli/widgets/thought_box.py
 """
 
+from textual.app import ComposeResult
 from textual.events import Click
 from textual.reactive import reactive
 from textual.widget import Widget
@@ -23,14 +24,14 @@ class ThoughtBox(Widget):
     duration_str = reactive("1.2s")
     thought_content = reactive("")
 
-    def __init__(self, duration_str: str = "1.2s", content: str = "", **kwargs):
+    def __init__(self, duration_str: str = "1.2s", content: str = "", **kwargs) -> None:
         super().__init__(classes="thought-box", **kwargs)
         self.duration_str = duration_str
         self.thought_content = (
             content or "Evaluating warehouse boundaries and spatial constraints..."
         )
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         yield Static(self._format_header(), id="thought-header", classes="thought-header")
         yield Static(self.thought_content, id="thought-body", classes="thought-content")
 

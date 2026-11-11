@@ -105,6 +105,8 @@ class CollisionCounter:
 # --------------------------------------------------------------------------- Telemetry Sample
 @dataclass
 class TelemetrySample:
+    """Synchronized kinematic state and collision snapshot at a given timestamp."""
+
     t: float
     x: float
     y: float
@@ -167,7 +169,7 @@ class TelemetryCollector:
                 rclpy.init(args=None)
             node = rclpy.create_node("lang2sim_telemetry_subscriber")
 
-            def _odom_cb(msg: Odometry):
+            def _odom_cb(msg: Odometry) -> None:
                 p = msg.pose.pose.position
                 q = msg.pose.pose.orientation
                 # Quaternion -> Yaw
@@ -184,7 +186,7 @@ class TelemetryCollector:
             try:
                 from gazebo_msgs.msg import ContactsState  # type: ignore[import-not-found]
 
-                def _contact_cb(msg: ContactsState):
+                def _contact_cb(msg: ContactsState) -> None:
                     for state in msg.states:
                         total_force = [0.0, 0.0, 0.0]
                         for f in state.total_wrench:
@@ -476,6 +478,7 @@ _GLOBAL_COLLECTOR: TelemetryCollector | None = None
 
 
 def get_telemetry_collector() -> TelemetryCollector:
+    """Return the global singleton instance of TelemetryCollector."""
     global _GLOBAL_COLLECTOR
     if _GLOBAL_COLLECTOR is None:
         _GLOBAL_COLLECTOR = TelemetryCollector()

@@ -22,7 +22,7 @@ class ZeroSlamMapSlicer:
     into 2D occupancy grids for Nav2.
     """
 
-    def __init__(self, resolution: float = MAP_RESOLUTION):
+    def __init__(self, resolution: float = MAP_RESOLUTION) -> None:
         self.resolution = resolution  # 0.05 m/pixel
 
     def slice_and_export(
@@ -52,7 +52,7 @@ class ZeroSlamMapSlicer:
         # Using a flat bytearray of size rows * cols
         grid = bytearray([254] * (rows * cols))
 
-        def set_pixel(c: int, r: int, val: int):
+        def set_pixel(c: int, r: int, val: int) -> None:
             if 0 <= c < cols and 0 <= r < rows:
                 grid[r * cols + c] = val
 

@@ -25,6 +25,8 @@ _ARCH_ALIASES = {"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64", "arm64
 
 @dataclass(frozen=True)
 class DockerInfo:
+    """Docker CLI and daemon introspection results."""
+
     cli_path: str | None = None
     server_reachable: bool = False
     server_version: str | None = None
@@ -50,6 +52,8 @@ class DockerInfo:
 
 @dataclass(frozen=True)
 class HostPlatform:
+    """Resolved host platform: OS family, architecture, display env vars, and Docker info."""
+
     os: HostOS
     arch: Arch
     env: dict[str, str] = field(default_factory=dict)  # DISPLAY / WAYLAND_DISPLAY / XAUTHORITY
@@ -68,10 +72,12 @@ class HostPlatform:
 
 
 def normalize_arch(machine: str) -> Arch:
+    """Normalize machine architecture string into a standard Arch token."""
     return _ARCH_ALIASES.get(machine.lower(), "unknown")  # type: ignore[return-value]
 
 
 def classify_os(system: str, release: str, wsl_interop: bool = False) -> HostOS:
+    """Classify host operating system into linux, macos, windows, or wsl."""
     s = system.lower()
     if s == "darwin":
         return "macos"
@@ -108,6 +114,7 @@ def parse_docker_info(info_json: str, cli_path: str | None = None) -> DockerInfo
 
 
 def detect_docker(docker: str = "docker", timeout: float = 10.0) -> DockerInfo:
+    """Inspect local Docker installation, server version, and daemon status."""
     cli = shutil.which(docker)
     if not cli:
         return DockerInfo(error="docker CLI not found on PATH")
@@ -130,6 +137,7 @@ def detect_docker(docker: str = "docker", timeout: float = 10.0) -> DockerInfo:
 
 
 def detect(docker: str = "docker", probe_docker: bool = True) -> HostPlatform:
+    """Inspect and resolve the host operating system, architecture, displays, and Docker."""
     host_os = classify_os(
         _platform.system(),
         _platform.release(),

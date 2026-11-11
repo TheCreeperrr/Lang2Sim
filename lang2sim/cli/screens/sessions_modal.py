@@ -3,6 +3,7 @@ Sessions Modal (ctrl+s / Command Palette)
 File: lang2sim/cli/screens/sessions_modal.py
 """
 
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
@@ -45,11 +46,11 @@ class RenameModal(ModalScreen[str | None]):
         Binding("escape", "cancel", "Cancel"),
     ]
 
-    def __init__(self, current_title: str, **kwargs):
+    def __init__(self, current_title: str, **kwargs) -> None:
         super().__init__(**kwargs)
         self.current_title = current_title
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         with Vertical(id="rename-dialog"):
             yield Static("Rename Session", id="rename-title")
             yield Input(value=self.current_title, id="rename-input")
@@ -79,14 +80,14 @@ class SessionsModal(ModalScreen[str | None]):
         Binding("ctrl+r", "rename_selected", "Rename", show=False),
     ]
 
-    def __init__(self, workspace_name: str | None = None, **kwargs):
+    def __init__(self, workspace_name: str | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.workspace_name = workspace_name
         self.all_sessions: list[ChatSession] = []
         self.filtered_sessions: list[ChatSession] = []
         self.selected_index: int = 0
 
-    def compose(self):
+    def compose(self) -> ComposeResult:
         with Vertical(id="sessions-dialog"):
             # Header: Sessions | esc
             with Horizontal(id="sessions-header"):

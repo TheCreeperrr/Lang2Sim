@@ -54,6 +54,7 @@ def set_spawn_log_file(path: str | None) -> None:
 
 
 def record_spawn(name: str, model: str, x: float, y: float, yaw: float = 0.0) -> dict[str, Any]:
+    """Record an entity spawn event in the in-memory log and persistent spawns file."""
     shape = SPAWN_FOOTPRINTS.get(model, SPAWN_FOOTPRINTS["wooden_crate"])
     entry = {
         "name": name,
@@ -86,11 +87,14 @@ def spawned_since(wall_time: float) -> list[dict[str, Any]]:
 
 
 def clear_spawn_log() -> None:
+    """Clear all recorded spawned entities from memory."""
     with _SPAWN_LOCK:
         _SPAWN_LOG.clear()
 
 
 class SpawnRequest(BaseModel):
+    """Payload to spawn an obstacle or object dynamically into the simulation."""
+
     model_name: str = Field("wooden_crate", description="Asset type to spawn")
     x: float = Field(2.0, description="X coordinate in meters")
     y: float = Field(0.0, description="Y coordinate in meters")
@@ -102,6 +106,8 @@ class SpawnRequest(BaseModel):
 
 
 class LightRequest(BaseModel):
+    """Payload to perturb simulation lighting and ambient reflectance."""
+
     diffuse: float = Field(0.5, ge=0.0, le=1.0, description="Sun diffuse reflectance")
     specular: float = Field(0.1, ge=0.0, le=1.0, description="Sun specular reflectance")
     intensity: float | None = Field(
@@ -111,10 +117,14 @@ class LightRequest(BaseModel):
 
 
 class ResetRequest(BaseModel):
+    """Payload to reset simulation physics or robot pose."""
+
     mode: str = Field("world", description="Reset scope ('world' or 'robot')")
 
 
 class ChassisPerturbationRequest(BaseModel):
+    """Payload to apply external forces or velocity disturbances to the robot chassis."""
+
     force_x: float = Field(10.0, description="X impulse force / velocity bias")
     force_y: float = Field(0.0, description="Y impulse force / velocity bias")
     force_z: float = Field(0.0, description="Z angular impulse / yaw velocity bias")
@@ -124,6 +134,7 @@ class ChassisPerturbationRequest(BaseModel):
 
 @router.post("/spawn")
 async def spawn_entity(req: SpawnRequest) -> dict[str, Any]:
+    """Spawn an entity into the Gazebo simulation and record its footprint."""
     bridge: GazeboBridge = get_bridge()
     res = await bridge.spawn_entity(
         req.model_name,
@@ -141,6 +152,7 @@ async def spawn_entity(req: SpawnRequest) -> dict[str, Any]:
 
 @router.post("/light")
 async def set_light(req: LightRequest) -> dict[str, Any]:
+    """Adjust ambient or sunlight luminance in Gazebo."""
     bridge: GazeboBridge = get_bridge()
     lum = req.intensity if req.intensity is not None else req.diffuse
     res = await bridge.set_light(lum)
@@ -151,6 +163,7 @@ async def set_light(req: LightRequest) -> dict[str, Any]:
 
 @router.post("/reset")
 async def reset_world(req: ResetRequest | None = None) -> dict[str, Any]:
+    """Reset the Gazebo simulation world or robot pose."""
     bridge: GazeboBridge = get_bridge()
     mode = req.mode if req and req.mode else "world"
     res = await bridge.reset(mode)
@@ -161,6 +174,7 @@ async def reset_world(req: ResetRequest | None = None) -> dict[str, Any]:
 
 @router.post("/chassis")
 async def apply_chassis(req: ChassisPerturbationRequest) -> dict[str, Any]:
+    """Apply an impulse force or twist disturbance to the robot chassis."""
     bridge: GazeboBridge = get_bridge()
     res = await bridge.apply_perturbation(
         Pose2D(x=req.force_x, y=req.force_y, yaw=req.force_z),
@@ -173,6 +187,7 @@ async def apply_chassis(req: ChassisPerturbationRequest) -> dict[str, Any]:
 
 @router.get("/health")
 def world_health() -> dict[str, Any]:
+    """Report health and connection status of the Gazebo perturbation bridge."""
     bridge: GazeboBridge = get_bridge()
     h = bridge.health()
     h["ok"] = h.get("status") in ("ready", "healthy", "ok")
@@ -181,6 +196,7 @@ def world_health() -> dict[str, Any]:
 
 @router.get("/entities")
 def list_entities() -> dict[str, Any]:
+    """List all entities dynamically spawned into the world."""
     bridge: GazeboBridge = get_bridge()
     entities = bridge.list_spawned_entities()
     return {"backend": type(bridge).__name__, "count": len(entities), "entities": entities}

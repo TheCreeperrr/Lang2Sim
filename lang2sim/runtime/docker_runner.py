@@ -39,13 +39,17 @@ RunFn = Callable[..., "subprocess.CompletedProcess[str]"]
 
 
 class DockerError(RuntimeError):
-    def __init__(self, message: str, stderr: str = ""):
+    """Raised when a Docker CLI command fails or returns a non-zero exit code."""
+
+    def __init__(self, message: str, stderr: str = "") -> None:
         super().__init__(message if not stderr else f"{message}: {stderr.strip()}")
         self.stderr = stderr
 
 
 @dataclass(frozen=True)
 class RunOptions:
+    """Options and bind-mount configurations for launching the simulation container."""
+
     image: str
     plan: DisplayPlan
     projects_dir: Path
@@ -214,7 +218,9 @@ def allow_local_x11_clients() -> bool:
 
 
 class DockerRunner:
-    def __init__(self, docker: str = "docker", run: RunFn = subprocess.run):
+    """Wrapper around the host Docker CLI managing container lifecycle and image runs."""
+
+    def __init__(self, docker: str = "docker", run: RunFn = subprocess.run) -> None:
         self.docker = docker
         self._run = run
 
@@ -238,9 +244,11 @@ class DockerRunner:
 
     # images
     def image_present(self, image: str) -> bool:
+        """Check whether a Docker image is available locally."""
         return self._call(["image", "inspect", image], check=False).returncode == 0
 
     def pull(self, image: str) -> None:
+        """Pull an image from its configured Docker registry."""
         self._call(["pull", image], timeout=None)
 
     def ensure_image(self, image: str) -> bool:
@@ -252,6 +260,7 @@ class DockerRunner:
 
     # containers
     def inspect(self, name: str = CONTAINER_NAME) -> dict | None:
+        """Return Docker inspection data for a container, or ``None`` if absent."""
         cp = self._call(["container", "inspect", name], check=False)
         if cp.returncode != 0:
             return None
@@ -264,6 +273,7 @@ class DockerRunner:
         return info.get("State") if info else None
 
     def is_running(self, name: str = CONTAINER_NAME) -> bool:
+        """Check whether the named container is currently running."""
         st = self.state(name)
         return bool(st and st.get("Running"))
 
@@ -279,12 +289,15 @@ class DockerRunner:
         return cp.stdout.strip()
 
     def stop(self, name: str = CONTAINER_NAME, timeout: int = 10) -> None:
+        """Stop a container, allowing up to ``timeout`` seconds for shutdown."""
         self._call(["stop", "-t", str(timeout), name], check=False, timeout=timeout + 30)
 
     def remove(self, name: str = CONTAINER_NAME) -> None:
+        """Force-remove a container if it exists."""
         self._call(["rm", "-f", name], check=False)
 
     def logs(self, name: str = CONTAINER_NAME, tail: int = 200) -> str:
+        """Return the most recent container output from stdout and stderr."""
         cp = self._call(["logs", "--tail", str(tail), name], check=False)
         return (cp.stdout or "") + (cp.stderr or "")
 

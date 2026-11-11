@@ -50,7 +50,7 @@ class NemotronClient:
         api_key: str | None = None,
         base_url: str | None = None,
         model: str | None = None,
-    ):
+    ) -> None:
         _load_env_if_present()
         self.api_key = (
             api_key
@@ -81,6 +81,7 @@ class NemotronClient:
 
     @property
     def client(self) -> AsyncOpenAI:
+        """Return the initialized API client, creating it on first access."""
         if self._client is None:
             if not self.api_key:
                 raise ValueError(
@@ -90,6 +91,7 @@ class NemotronClient:
         return self._client
 
     def is_configured(self) -> bool:
+        """Report whether an API key is available for requests."""
         return bool(self.api_key)
 
     async def stream_chat(
