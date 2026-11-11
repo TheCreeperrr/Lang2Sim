@@ -81,10 +81,6 @@ ignore = [
     "S108",   # Allow /tmp paths for X11 sockets and container mounts
     "S110",   # Allow try-except-pass in teardown, UI unmount, and fallback handlers
     "S314",   # Internal SDF/XML element tree parsing
-    "UP006",  # Typing modernisation deferred to follow-up cleanup
-    "UP007",  # Typing modernisation deferred to follow-up cleanup
-    "UP035",  # Deprecated import migration deferred to follow-up cleanup
-    "UP045",  # Optional/Union modernisation deferred to follow-up cleanup
 ]
 
 [tool.ruff.lint.per-file-ignores]

@@ -5,7 +5,7 @@ File: lang2sim/cli/screens/workspace_screen.py
 
 import asyncio
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from rich.markup import escape
 from textual import events, work
@@ -50,7 +50,7 @@ class WorkspaceScreen(Screen):
     def __init__(
         self,
         initial_prompt: str = "",
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
         workspace_name: str = "active_project",
         **kwargs,
     ):
@@ -59,10 +59,10 @@ class WorkspaceScreen(Screen):
         self.client = NemotronClient()
         self.workspace_name = workspace_name
         self.always_allow_commands: bool = False
-        self._pending_permissions: Dict[str, asyncio.Future] = {}
-        self._active_command_cards: Dict[str, CommandCard] = {}
-        self._active_plan_card: Optional[PlanCard] = None
-        self._selected_text: Optional[str] = None
+        self._pending_permissions: dict[str, asyncio.Future] = {}
+        self._active_command_cards: dict[str, CommandCard] = {}
+        self._active_plan_card: PlanCard | None = None
+        self._selected_text: str | None = None
 
         # Session initialization
         if session_id:
@@ -82,7 +82,7 @@ class WorkspaceScreen(Screen):
                 system_prompt=SYSTEM_PROMPT,
             )
 
-        self.conversation_history: List[Dict[str, str]] = []
+        self.conversation_history: list[dict[str, str]] = []
         for m in self.session.messages:
             if m.role == "system":
                 self.conversation_history.append({"role": "system", "content": m.content})
@@ -97,7 +97,7 @@ class WorkspaceScreen(Screen):
         self.demo = DemoRunner(
             say=self._demo_say, show=self._demo_show, progress=self._demo_progress
         )
-        self._progress_line: Optional[Static] = None
+        self._progress_line: Static | None = None
 
     def compose(self):
         # Top title bar
@@ -306,7 +306,7 @@ class WorkspaceScreen(Screen):
             callback=self.on_session_switched,
         )
 
-    def on_session_switched(self, session_id: Optional[str]) -> None:
+    def on_session_switched(self, session_id: str | None) -> None:
         if session_id and session_id != self.session.id:
             self.load_session(session_id)
 
@@ -600,7 +600,7 @@ class WorkspaceScreen(Screen):
     def _demo_show(self, renderable) -> None:
         self._mount_chat(Static(renderable, classes="demo-table"))
 
-    def _demo_progress(self, markup: Optional[str]) -> None:
+    def _demo_progress(self, markup: str | None) -> None:
         """One status line updated in place (None: leave it and start a new one next time)."""
         if markup is None:
             self._progress_line = None
@@ -630,7 +630,7 @@ class WorkspaceScreen(Screen):
         except Exception:  # noqa: BLE001 - app shutting down
             pass
 
-    def _apply_telemetry(self, fields: Dict[str, Any]) -> None:
+    def _apply_telemetry(self, fields: dict[str, Any]) -> None:
         try:
             self.query_one(TelemetrySidebar).update_telemetry(**fields)
         except Exception:  # noqa: BLE001 - screen not mounted any more
@@ -657,10 +657,10 @@ class WorkspaceScreen(Screen):
             return
 
         supervisor = ReActSupervisor(client=self.client, workspace_name=self.workspace_name)
-        thought_box: Optional[ThoughtBox] = None
-        thought_text_parts: List[str] = []
-        content_parts: List[str] = []
-        active_pills: Dict[str, ActionPill] = {}
+        thought_box: ThoughtBox | None = None
+        thought_text_parts: list[str] = []
+        content_parts: list[str] = []
+        active_pills: dict[str, ActionPill] = {}
 
         # Ground the answer in the running simulation (live telemetry + latest NQI report)
         from ...agent.grounding import fetch_context, with_context

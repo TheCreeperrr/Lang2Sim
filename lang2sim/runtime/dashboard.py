@@ -26,8 +26,9 @@ from __future__ import annotations
 import base64
 import json
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 from lang2sim.runtime.telemetry_recorder import load_recorded_runs
 
@@ -41,9 +42,9 @@ class MapError(ValueError):
     pass
 
 
-def _yaml_kv(path: Path) -> Dict[str, str]:
+def _yaml_kv(path: Path) -> dict[str, str]:
     """Flat `key: value` reader for Nav2 map.yaml (no PyYAML in the image's venv guarantee)."""
-    out: Dict[str, str] = {}
+    out: dict[str, str] = {}
     for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.split("#", 1)[0].strip()
         if ":" in line:
@@ -55,7 +56,7 @@ def _yaml_kv(path: Path) -> Dict[str, str]:
 def read_pgm(path: Path) -> tuple:
     """(width, height, maxval, pixel bytes) of a binary (P5) or ASCII (P2) PGM, comments allowed."""
     data = Path(path).read_bytes()
-    tokens: List[bytes] = []
+    tokens: list[bytes] = []
     i = 0
     while len(tokens) < 4:
         while i < len(data) and data[i : i + 1].isspace():
@@ -86,7 +87,7 @@ def read_pgm(path: Path) -> tuple:
     return w, h, maxval, pixels
 
 
-def read_map(run_dir: Path, map_name: str = "map.yaml") -> Dict[str, Any]:
+def read_map(run_dir: Path, map_name: str = "map.yaml") -> dict[str, Any]:
     """Occupancy grid for drawing: cells 0 free, 1 occupied, 2 unknown, row 0 = top (image order)."""
     yaml_path = Path(run_dir) / map_name
     meta = _yaml_kv(yaml_path)
@@ -113,7 +114,7 @@ def read_map(run_dir: Path, map_name: str = "map.yaml") -> Dict[str, Any]:
     }
 
 
-def read_mission(run_dir: Path) -> Optional[Dict[str, Any]]:
+def read_mission(run_dir: Path) -> dict[str, Any] | None:
     try:
         spec = json.loads((Path(run_dir) / "spec.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -128,7 +129,7 @@ def read_mission(run_dir: Path) -> Optional[Dict[str, Any]]:
     }
 
 
-def downsample(samples: List[Dict[str, float]], max_points: int = MAX_POINTS) -> List[List[float]]:
+def downsample(samples: list[dict[str, float]], max_points: int = MAX_POINTS) -> list[list[float]]:
     """[[t, x, y, yaw, v], ...] with at most max_points rows (keeps first and last)."""
     n = len(samples)
     step = max(1, -(-n // max_points))
@@ -147,7 +148,7 @@ def downsample(samples: List[Dict[str, float]], max_points: int = MAX_POINTS) ->
     ]
 
 
-def trajectories_payload(run_dir: Path, max_points: int = MAX_POINTS) -> Dict[str, Any]:
+def trajectories_payload(run_dir: Path, max_points: int = MAX_POINTS) -> dict[str, Any]:
     runs = load_recorded_runs(run_dir)
     out = {}
     for label, data in runs.items():
@@ -163,29 +164,29 @@ def trajectories_payload(run_dir: Path, max_points: int = MAX_POINTS) -> Dict[st
     return {"runs": out}
 
 
-def read_report(run_dir: Path) -> Optional[Dict[str, Any]]:
+def read_report(run_dir: Path) -> dict[str, Any] | None:
     try:
         return json.loads((Path(run_dir) / REPORT_NAME).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
 
 
-def project_path(run_dir: Path, projects_dir: Optional[str] = None) -> Optional[str]:
+def project_path(run_dir: Path, projects_dir: str | None = None) -> str | None:
     """run_dir relative to the projects root (same relative path on host and in the container)."""
     root = projects_dir or os.getenv("L2S_PROJECTS_DIR")
     if not root:
         return None
     try:
-        return str(Path(run_dir).resolve().relative_to(Path(root).resolve()))
+        return Path(run_dir).resolve().relative_to(Path(root).resolve()).as_posix()
     except ValueError:
         return None
 
 
 def make_router(
-    get_run_dir: Callable[[], Optional[Path]],
+    get_run_dir: Callable[[], Path | None],
     mode: str,
     get_world: Callable[[], str] = lambda: "",
-    get_spawned: Callable[[], List[Dict[str, Any]]] = lambda: [],
+    get_spawned: Callable[[], list[dict[str, Any]]] = lambda: [],
 ):
     """FastAPI router with the page and the /v1/run data routes for whatever run get_run_dir() names."""
     from fastapi import APIRouter, HTTPException
@@ -206,7 +207,7 @@ def make_router(
         )
 
     @router.get("/v1/run")
-    def run_info() -> Dict[str, Any]:
+    def run_info() -> dict[str, Any]:
         d = get_run_dir()
         if d is None:
             return {"loaded": False, "mode": mode}
@@ -224,18 +225,18 @@ def make_router(
         }
 
     @router.get("/v1/run/map")
-    def run_map() -> Dict[str, Any]:
+    def run_map() -> dict[str, Any]:
         try:
             return read_map(run_dir_or_404())
         except (OSError, MapError, KeyError, ValueError) as e:
             raise HTTPException(404, f"map not readable: {e}") from e
 
     @router.get("/v1/run/trajectories")
-    def run_trajectories() -> Dict[str, Any]:
+    def run_trajectories() -> dict[str, Any]:
         return trajectories_payload(run_dir_or_404())
 
     @router.get("/v1/run/report")
-    def run_report() -> Dict[str, Any]:
+    def run_report() -> dict[str, Any]:
         report = read_report(run_dir_or_404())
         if report is None:
             raise HTTPException(404, "no benchmark_report.json yet (run --mission or --benchmark)")

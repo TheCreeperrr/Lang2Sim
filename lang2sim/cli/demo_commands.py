@@ -33,9 +33,10 @@ import re
 import shlex
 import threading
 import webbrowser
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 COMMANDS = ("mission", "stress", "benchmark", "report", "status", "dashboard", "replay", "help")
 DEMO_RUN = Path(__file__).resolve().parents[2] / "catalog" / "demo_runs" / "empty_room_benchmark"
@@ -58,13 +59,13 @@ You can also just say it: [italic]"drop the lights to 10% and spawn a crate in f
 @dataclass
 class Command:
     name: str
-    args: List[str] = field(default_factory=list)
-    opts: Dict[str, str] = field(default_factory=dict)
+    args: list[str] = field(default_factory=list)
+    opts: dict[str, str] = field(default_factory=dict)
     note: str = ""  # shown to the user (e.g. how a sentence was interpreted)
     natural: bool = False  # parsed from a sentence: do only what it asked for
 
 
-def parse_command(text: str) -> Optional[Command]:
+def parse_command(text: str) -> Command | None:
     """'/stress light=0.2 model=barrel' -> Command; None if not a known slash command."""
     text = text.strip()
     if not text.startswith("/"):
@@ -96,7 +97,7 @@ _OBSTACLE_WORDS = {
 }
 
 
-def parse_stress_intent(text: str) -> Optional[Command]:
+def parse_stress_intent(text: str) -> Command | None:
     """Recognise a natural-language stress request; None unless it clearly asks to change the sim.
 
     Needs an action ("drop", "spawn", "dim", "inject", ...) and a target (lights, or an
@@ -116,8 +117,8 @@ def parse_stress_intent(text: str) -> Optional[Command]:
     )
     if not action:
         return None
-    opts: Dict[str, str] = {}
-    notes: List[str] = []
+    opts: dict[str, str] = {}
+    notes: list[str] = []
     light = None
     m = re.search(_LIGHT_WORDS + r"[^0-9%]{0,30}?(\d+(?:\.\d+)?)\s*(%|percent)", t) or re.search(
         r"(\d+(?:\.\d+)?)\s*(%|percent)[^.]{0,20}?" + _LIGHT_WORDS, t
@@ -154,7 +155,7 @@ def parse_stress_intent(text: str) -> Optional[Command]:
     return Command("stress", opts=opts, note=note, natural=True)
 
 
-def stress_targets(cmd: Command) -> Tuple[Optional[float], Optional[str]]:
+def stress_targets(cmd: Command) -> tuple[float | None, str | None]:
     """(light 0..1 or None, obstacle model or None) for a /stress command.
 
     /stress alone dims to 10% and drops a wooden crate; light=off / model=none skip one.
@@ -177,9 +178,7 @@ def stress_targets(cmd: Command) -> Tuple[Optional[float], Optional[str]]:
 
 
 # --------------------------------------------------------------------------- crate placement
-def _free(
-    map_info: Optional[Dict[str, Any]], x: float, y: float, half: Tuple[float, float]
-) -> bool:
+def _free(map_info: dict[str, Any] | None, x: float, y: float, half: tuple[float, float]) -> bool:
     """True when the crate's footprint (plus 5 cm) is free space on the map (or no map is known)."""
     if not map_info:
         return True
@@ -202,13 +201,13 @@ def _free(
 
 
 def pick_crate_spot(
-    pose: Dict[str, float],
-    heading_to: Optional[Tuple[float, float]],
-    avoid: Sequence[Tuple[float, float]],
-    map_info: Optional[Dict[str, Any]] = None,
+    pose: dict[str, float],
+    heading_to: tuple[float, float] | None,
+    avoid: Sequence[tuple[float, float]],
+    map_info: dict[str, Any] | None = None,
     model: str = "wooden_crate",
     ahead: float = 1.5,
-) -> Optional[Tuple[float, float, float]]:
+) -> tuple[float, float, float] | None:
     """(x, y, yaw) for a crate in front of the robot, across its way, or None if nowhere fits.
 
     'In front' is toward the robot's current target when known (its planned direction),
@@ -248,10 +247,10 @@ class DemoRunner:
 
     def __init__(
         self,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         say: Say = print,
         show: Show = print,
-        progress: Optional[Callable[[Optional[str]], None]] = None,
+        progress: Callable[[str | None], None] | None = None,
     ) -> None:
         from lang2sim.telemetry.live import api_base_url
 
@@ -262,12 +261,12 @@ class DemoRunner:
         self._replay_server = None
 
     # --- plumbing ----------------------------------------------------------
-    def _session(self, run_dir: Optional[Path] = None):
+    def _session(self, run_dir: Path | None = None):
         from lang2sim.runtime.session import SimSession
 
         return SimSession.attach(self.base_url, run_dir)
 
-    async def _run_info(self, session) -> Dict[str, Any]:
+    async def _run_info(self, session) -> dict[str, Any]:
         info = await session.api._request("GET", "/run")
         if not info.get("loaded"):
             raise RuntimeError(
@@ -370,7 +369,7 @@ class DemoRunner:
             await s.stop()
         self.show_report(report)
 
-    def show_report(self, report: Dict[str, Any]) -> None:
+    def show_report(self, report: dict[str, Any]) -> None:
         from lang2sim.telemetry.nqi_scorer import render_comparison_table
 
         self.show(render_comparison_table(report))
@@ -497,7 +496,7 @@ class DemoRunner:
             s.run_dir = run_dir
             await self._back_to_start(s, run_dir)
 
-            def trig(tr: Dict[str, Any], err: Optional[str]) -> None:
+            def trig(tr: dict[str, Any], err: str | None) -> None:
                 p = tr.get("spawn_pose") or {}
                 self.say(
                     f"[#ef4444]■[/] Stress: {tr.get('model_name')} dropped at ({p.get('x')}, {p.get('y')})"

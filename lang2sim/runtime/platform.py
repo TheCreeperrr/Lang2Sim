@@ -15,7 +15,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Literal
 
 HostOS = Literal["linux", "wsl", "macos", "windows"]
 Arch = Literal["amd64", "arm64", "unknown"]
@@ -25,15 +25,15 @@ _ARCH_ALIASES = {"x86_64": "amd64", "amd64": "amd64", "aarch64": "arm64", "arm64
 
 @dataclass(frozen=True)
 class DockerInfo:
-    cli_path: Optional[str] = None
+    cli_path: str | None = None
     server_reachable: bool = False
-    server_version: Optional[str] = None
-    operating_system: Optional[str] = None  # "Docker Desktop", "Ubuntu 24.04 LTS", ...
+    server_version: str | None = None
+    operating_system: str | None = None  # "Docker Desktop", "Ubuntu 24.04 LTS", ...
     arch: Arch = "unknown"
-    runtimes: List[str] = field(default_factory=list)
-    mem_total_mb: Optional[int] = None  # memory the daemon's VM/host gives containers
-    cpus: Optional[int] = None
-    error: Optional[str] = None
+    runtimes: list[str] = field(default_factory=list)
+    mem_total_mb: int | None = None  # memory the daemon's VM/host gives containers
+    cpus: int | None = None
+    error: str | None = None
 
     @property
     def installed(self) -> bool:
@@ -52,13 +52,13 @@ class DockerInfo:
 class HostPlatform:
     os: HostOS
     arch: Arch
-    env: Dict[str, str] = field(default_factory=dict)  # DISPLAY / WAYLAND_DISPLAY / XAUTHORITY
+    env: dict[str, str] = field(default_factory=dict)  # DISPLAY / WAYLAND_DISPLAY / XAUTHORITY
     has_wslg: bool = False
     has_x11_socket_dir: bool = False
     docker: DockerInfo = field(default_factory=DockerInfo)
 
     @property
-    def display(self) -> Optional[str]:
+    def display(self) -> str | None:
         return self.env.get("DISPLAY") or None
 
 
@@ -82,7 +82,7 @@ def classify_os(system: str, release: str, wsl_interop: bool = False) -> HostOS:
     return "linux"
 
 
-def parse_docker_info(info_json: str, cli_path: Optional[str] = None) -> DockerInfo:
+def parse_docker_info(info_json: str, cli_path: str | None = None) -> DockerInfo:
     """Parse `docker info --format '{{json .}}'`."""
     try:
         d = json.loads(info_json)

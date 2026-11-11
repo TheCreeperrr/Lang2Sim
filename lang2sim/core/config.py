@@ -6,7 +6,6 @@ File: lang2sim/core/config.py
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 
 def _env(*names: str, default: str) -> str:
@@ -89,7 +88,7 @@ def get_active_project_dir(project_name: str = "active_project") -> Path:
     return p_dir
 
 
-def get_run_dir(project_name: str = "active_project", timestamp: Optional[str] = None) -> Path:
+def get_run_dir(project_name: str = "active_project", timestamp: str | None = None) -> Path:
     """
     Returns an isolated timestamped run directory matching Dev 3 convention:
     ~/.lang2sim/projects/<project_name>/runs/<timestamp>/
@@ -112,7 +111,7 @@ def get_catalog_dir() -> Path:
 class Config:
     """Object-oriented wrapper around configuration settings."""
 
-    def __init__(self, workspace_root: Optional[Path] = None):
+    def __init__(self, workspace_root: Path | None = None):
         self.workspace_root = workspace_root or Path(__file__).resolve().parent.parent.parent
         self.catalog_dir = CATALOG_DIR
         pkg_templates = Path(__file__).resolve().parent.parent / "compiler" / "templates"
@@ -138,7 +137,7 @@ class Config:
         return get_active_project_dir(project_name)
 
     def create_run_dir(
-        self, project_name: str = "active_project", timestamp: Optional[str] = None
+        self, project_name: str = "active_project", timestamp: str | None = None
     ) -> Path:
         return get_run_dir(project_name, timestamp)
 

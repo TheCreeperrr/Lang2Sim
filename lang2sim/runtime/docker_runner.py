@@ -16,9 +16,9 @@ import importlib
 import json
 import os
 import subprocess
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
-from typing import Callable, Dict, List, Optional, Sequence
 
 from lang2sim.runtime.display import DisplayPlan
 
@@ -49,16 +49,16 @@ class RunOptions:
     image: str
     plan: DisplayPlan
     projects_dir: Path
-    catalog_dir: Optional[Path] = None
-    src_dir: Optional[Path] = None  # dev: bind-mount the repo over the baked-in package
-    host_uid: Optional[int] = None
-    host_gid: Optional[int] = None
+    catalog_dir: Path | None = None
+    src_dir: Path | None = None  # dev: bind-mount the repo over the baked-in package
+    host_uid: int | None = None
+    host_gid: int | None = None
     api_port: int = CONTAINER_API_PORT
     foxglove_port: int = CONTAINER_FOXGLOVE_PORT
     novnc_port: int = CONTAINER_NOVNC_PORT
-    host_env: Dict[str, str] = field(default_factory=dict)  # DISPLAY, WAYLAND_DISPLAY, XAUTHORITY
+    host_env: dict[str, str] = field(default_factory=dict)  # DISPLAY, WAYLAND_DISPLAY, XAUTHORITY
     has_dxg: bool = False
-    extra_env: Dict[str, str] = field(default_factory=dict)
+    extra_env: dict[str, str] = field(default_factory=dict)
     name: str = CONTAINER_NAME
     shm_size: str = "2g"
     command: Sequence[str] = ("serve",)
@@ -88,10 +88,10 @@ def host_to_container_path(host_path: Path, projects_dir: Path) -> str:
     return str(PurePosixPath(cfg.CONTAINER_PROJECTS_DIR, *rel.parts))
 
 
-def build_run_args(opts: RunOptions) -> List[str]:
+def build_run_args(opts: RunOptions) -> list[str]:
     """argv after `docker` for starting the sim container (detached)."""
     plan = opts.plan
-    a: List[str] = ["run", "-d", "--name", opts.name, "--label", LABEL, "--shm-size", opts.shm_size]
+    a: list[str] = ["run", "-d", "--name", opts.name, "--label", LABEL, "--shm-size", opts.shm_size]
 
     def env(k: str, v: object) -> None:
         a.extend(["-e", f"{k}={v}"])
@@ -159,9 +159,9 @@ def build_run_args(opts: RunOptions) -> List[str]:
 def default_run_options(
     plan: DisplayPlan,
     *,
-    image: Optional[str] = None,
-    project_src: Optional[Path] = None,
-    host_env: Optional[Dict[str, str]] = None,
+    image: str | None = None,
+    project_src: Path | None = None,
+    host_env: dict[str, str] | None = None,
     has_dxg: bool = False,
 ) -> RunOptions:
     """RunOptions from core.config for this user (paths, ports, uid)."""
@@ -222,7 +222,7 @@ class DockerRunner:
         self,
         args: Sequence[str],
         check: bool = True,
-        timeout: Optional[float] = 60,
+        timeout: float | None = 60,
     ) -> subprocess.CompletedProcess[str]:
         try:
             cp = self._run(
@@ -251,14 +251,14 @@ class DockerRunner:
         return True
 
     # containers
-    def inspect(self, name: str = CONTAINER_NAME) -> Optional[dict]:
+    def inspect(self, name: str = CONTAINER_NAME) -> dict | None:
         cp = self._call(["container", "inspect", name], check=False)
         if cp.returncode != 0:
             return None
         data = json.loads(cp.stdout or "[]")
         return data[0] if data else None
 
-    def state(self, name: str = CONTAINER_NAME) -> Optional[dict]:
+    def state(self, name: str = CONTAINER_NAME) -> dict | None:
         """Docker's .State (Status, Running, ExitCode, Health, ...) or None if absent."""
         info = self.inspect(name)
         return info.get("State") if info else None
@@ -292,7 +292,7 @@ class DockerRunner:
         self,
         cmd: Sequence[str],
         name: str = CONTAINER_NAME,
-        timeout: Optional[float] = 60,
+        timeout: float | None = 60,
         user: str = SIM_USER,
     ) -> subprocess.CompletedProcess[str]:
         """Run a command in the container as the sim user.

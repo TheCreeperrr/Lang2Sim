@@ -12,9 +12,10 @@ from __future__ import annotations
 
 import csv
 import json
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Optional, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -23,7 +24,7 @@ __all__ = ["Trajectory"]
 _FIELDS = ("t", "x", "y", "yaw", "v", "w")
 
 
-def _as_array(values: Optional[Iterable[float]], n: int) -> Optional[np.ndarray]:
+def _as_array(values: Iterable[float] | None, n: int) -> np.ndarray | None:
     if values is None:
         return None
     arr = np.asarray(list(values) if not isinstance(values, np.ndarray) else values, dtype=float)
@@ -51,17 +52,17 @@ class Trajectory:
     t: np.ndarray
     x: np.ndarray
     y: np.ndarray
-    yaw: Optional[np.ndarray] = None
-    v: Optional[np.ndarray] = None
-    w: Optional[np.ndarray] = None
-    goal: Optional[tuple[float, float]] = None
-    l_optimal: Optional[float] = None
+    yaw: np.ndarray | None = None
+    v: np.ndarray | None = None
+    w: np.ndarray | None = None
+    goal: tuple[float, float] | None = None
+    l_optimal: float | None = None
     collisions: int = 0
     label: str = ""
     meta: dict[str, Any] = field(default_factory=dict)
-    slam_x: Optional[np.ndarray] = None
-    slam_y: Optional[np.ndarray] = None
-    ate: Optional[np.ndarray] = None
+    slam_x: np.ndarray | None = None
+    slam_y: np.ndarray | None = None
+    ate: np.ndarray | None = None
 
     # ------------------------------------------------------------------ init
     def __post_init__(self) -> None:
@@ -190,7 +191,7 @@ class Trajectory:
         """Build from a list of dicts with keys ``t, x, y`` and optional ``yaw, v, w``."""
         if len(samples) < 2:
             raise ValueError("need at least 2 samples")
-        cols: dict[str, Optional[list[float]]] = {}
+        cols: dict[str, list[float] | None] = {}
         for name in _FIELDS + ("slam_x", "slam_y", "ate"):
             if all(name in s and s[name] is not None for s in samples):
                 cols[name] = [float(s[name]) for s in samples]

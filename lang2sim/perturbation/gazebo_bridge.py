@@ -19,7 +19,7 @@ import os
 import shutil
 import time
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 from lang2sim.perturbation._compat import Pose2D
 from lang2sim.perturbation.sdf_snippets import get_inline_sdf
@@ -64,7 +64,7 @@ class BridgeResult:
 class GazeboBridge(abc.ABC):
     """Abstract Base Class for simulator dynamic mutation dispatchers."""
 
-    def __init__(self, world_name: Optional[str] = None, exec_prefix: Optional[str] = None) -> None:
+    def __init__(self, world_name: str | None = None, exec_prefix: str | None = None) -> None:
         self.world_name = world_name or os.environ.get("LANG2SIM_WORLD_NAME") or "default"
         self.exec_prefix = (
             exec_prefix
@@ -80,13 +80,13 @@ class GazeboBridge(abc.ABC):
         self,
         model_name: str,
         pose: Pose2D,
-        entity_name: Optional[str] = None,
+        entity_name: str | None = None,
     ) -> BridgeResult:
         """Spawn a dynamic obstacle into the live simulation."""
         ...
 
     @abc.abstractmethod
-    async def set_light(self, luminance: float, light_name: Optional[str] = None) -> BridgeResult:
+    async def set_light(self, luminance: float, light_name: str | None = None) -> BridgeResult:
         """Dynamically alter ambient/sun lighting luminance (0.0 to 1.0)."""
         ...
 
@@ -110,7 +110,7 @@ class GazeboBridge(abc.ABC):
     def list_spawned_entities(self) -> list[str]:
         return list(self.spawned_entities)
 
-    def _next_entity_name(self, model_name: str, requested_name: Optional[str]) -> str:
+    def _next_entity_name(self, model_name: str, requested_name: str | None) -> str:
         if requested_name:
             return requested_name
         self.spawn_counter += 1
@@ -123,8 +123,8 @@ class DryRunBridge(GazeboBridge):
 
     def __init__(
         self,
-        world_name: Optional[str] = None,
-        exec_prefix: Optional[str] = None,
+        world_name: str | None = None,
+        exec_prefix: str | None = None,
         simulated_target: str = "harmonic",
     ) -> None:
         super().__init__(world_name, exec_prefix)
@@ -134,7 +134,7 @@ class DryRunBridge(GazeboBridge):
         self,
         model_name: str,
         pose: Pose2D,
-        entity_name: Optional[str] = None,
+        entity_name: str | None = None,
     ) -> BridgeResult:
         t0 = time.perf_counter()
         name = self._next_entity_name(model_name, entity_name)
@@ -165,7 +165,7 @@ class DryRunBridge(GazeboBridge):
             data={"entity_name": name, "model_name": model_name, "pose": pose.model_dump()},
         )
 
-    async def set_light(self, luminance: float, light_name: Optional[str] = None) -> BridgeResult:
+    async def set_light(self, luminance: float, light_name: str | None = None) -> BridgeResult:
         t0 = time.perf_counter()
         if not (0.0 <= luminance <= 1.0):
             return BridgeResult(
@@ -296,7 +296,7 @@ class HarmonicBridge(GazeboBridge):
         self,
         model_name: str,
         pose: Pose2D,
-        entity_name: Optional[str] = None,
+        entity_name: str | None = None,
     ) -> BridgeResult:
         t0 = time.perf_counter()
         name = self._next_entity_name(model_name, entity_name)
@@ -332,7 +332,7 @@ class HarmonicBridge(GazeboBridge):
             data={"entity_name": name, "model_name": model_name, "pose": pose.model_dump()},
         )
 
-    async def set_light(self, luminance: float, light_name: Optional[str] = None) -> BridgeResult:
+    async def set_light(self, luminance: float, light_name: str | None = None) -> BridgeResult:
         t0 = time.perf_counter()
         if not (0.0 <= luminance <= 1.0):
             return BridgeResult(
@@ -422,7 +422,7 @@ class ClassicBridge(GazeboBridge):
         self,
         model_name: str,
         pose: Pose2D,
-        entity_name: Optional[str] = None,
+        entity_name: str | None = None,
     ) -> BridgeResult:
         t0 = time.perf_counter()
         name = self._next_entity_name(model_name, entity_name)
@@ -451,7 +451,7 @@ class ClassicBridge(GazeboBridge):
             data={"entity_name": name, "model_name": model_name, "pose": pose.model_dump()},
         )
 
-    async def set_light(self, luminance: float, light_name: Optional[str] = None) -> BridgeResult:
+    async def set_light(self, luminance: float, light_name: str | None = None) -> BridgeResult:
         t0 = time.perf_counter()
         if not (0.0 <= luminance <= 1.0):
             return BridgeResult(
@@ -528,10 +528,10 @@ class ClassicBridge(GazeboBridge):
 
 
 # --------------------------------------------------------------------------- Bridge Factory
-_GLOBAL_BRIDGE: Optional[GazeboBridge] = None
+_GLOBAL_BRIDGE: GazeboBridge | None = None
 
 
-def get_bridge(backend: Optional[str] = None) -> GazeboBridge:
+def get_bridge(backend: str | None = None) -> GazeboBridge:
     """Return cached singleton mutation bridge with automatic backend detection."""
     global _GLOBAL_BRIDGE
     if _GLOBAL_BRIDGE is not None and backend is None:

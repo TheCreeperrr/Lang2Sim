@@ -3,7 +3,7 @@ Stage-wise Execution Plan Card Widget
 File: lang2sim/cli/widgets/plan_card.py
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 from textual.containers import Horizontal
 from textual.widget import Widget
@@ -51,14 +51,14 @@ class PlanCard(Widget):
 
     def __init__(
         self,
-        steps: List[str],
+        steps: list[str],
         title: str = "Autonomous Execution Plan",
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.plan_title = title
         # Each step: {"title": str, "status": "pending"|"running"|"completed"|"failed", "detail": ""}
-        self.steps: List[Dict[str, Any]] = [
+        self.steps: list[dict[str, Any]] = [
             {"title": s, "status": "pending", "detail": ""} for s in steps
         ]
         if self.steps:

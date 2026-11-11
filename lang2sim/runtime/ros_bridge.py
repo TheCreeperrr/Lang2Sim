@@ -23,8 +23,9 @@ import collections
 import math
 import threading
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Deque, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 from lang2sim.runtime import robot_instrument
 from lang2sim.runtime.telemetry_recorder import (
@@ -47,7 +48,7 @@ def yaw_from_quaternion(x: float, y: float, z: float, w: float) -> float:
     return math.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
 
 
-def rtf_from_samples(samples: Sequence[Tuple[float, float]]) -> Optional[float]:
+def rtf_from_samples(samples: Sequence[tuple[float, float]]) -> float | None:
     """(wall_s, sim_s) pairs, oldest first -> real-time factor over the span, or None."""
     if len(samples) < 2:
         return None
@@ -60,21 +61,21 @@ def rtf_from_samples(samples: Sequence[Tuple[float, float]]) -> Optional[float]:
 @dataclass
 class RosSnapshot:
     now: float = 0.0  # wall time of the snapshot
-    clock_wall: Optional[float] = None  # wall time of the last /clock
+    clock_wall: float | None = None  # wall time of the last /clock
     sim_time: float = 0.0
-    odom_wall: Optional[float] = None
-    scan_wall: Optional[float] = None
-    odom_pose: Optional[Tuple[float, float, float]] = None  # x, y, yaw in odom
-    map_pose: Optional[Tuple[float, float, float]] = None  # x, y, yaw in map (TF)
-    velocity: Optional[Tuple[float, float, float]] = None  # vx, vy, wz
-    lifecycle: Dict[str, str] = field(default_factory=dict)  # node -> "active", ...
-    rtf: Optional[float] = None
-    ground_truth: Optional[Tuple[float, float, float]] = None  # x, y, yaw in world (Gazebo)
-    ground_truth_wall: Optional[float] = None
-    scan_min: Optional[float] = None  # closest valid lidar return, m
-    spawn: Optional[Tuple[float, float, float]] = None  # odom frame origin in world
+    odom_wall: float | None = None
+    scan_wall: float | None = None
+    odom_pose: tuple[float, float, float] | None = None  # x, y, yaw in odom
+    map_pose: tuple[float, float, float] | None = None  # x, y, yaw in map (TF)
+    velocity: tuple[float, float, float] | None = None  # vx, vy, wz
+    lifecycle: dict[str, str] = field(default_factory=dict)  # node -> "active", ...
+    rtf: float | None = None
+    ground_truth: tuple[float, float, float] | None = None  # x, y, yaw in world (Gazebo)
+    ground_truth_wall: float | None = None
+    scan_min: float | None = None  # closest valid lidar return, m
+    spawn: tuple[float, float, float] | None = None  # odom frame origin in world
 
-    def fresh(self, t: Optional[float]) -> bool:
+    def fresh(self, t: float | None) -> bool:
         return t is not None and self.now - t <= FRESH_S
 
 
@@ -84,14 +85,14 @@ def stamp_s(stamp: Any) -> float:
 
 
 def contact_pairs(
-    entries: Sequence[Tuple[str, str, Optional[float]]], robot: str
-) -> List[Tuple[str, Optional[float]]]:
+    entries: Sequence[tuple[str, str, float | None]], robot: str
+) -> list[tuple[str, float | None]]:
     """(collision1, collision2, force) -> [(the entity that is not the robot, force)].
 
     Names are Gazebo-scoped ("waffle::base_link::base_collision"); a contact whose
     sides are both the robot (self-contact) is dropped. force None = no wrench data.
     """
-    out: List[Tuple[str, Optional[float]]] = []
+    out: list[tuple[str, float | None]] = []
     for a, b, force in entries:
         a_robot = a.split("::")[0] == robot
         b_robot = b.split("::")[0] == robot
@@ -101,7 +102,7 @@ def contact_pairs(
     return out
 
 
-def readiness(s: RosSnapshot) -> Dict[str, bool]:
+def readiness(s: RosSnapshot) -> dict[str, bool]:
     """What 'the simulation is ready to navigate' means, check by check."""
     return {
         "gazebo_clock": s.fresh(s.clock_wall),
@@ -132,7 +133,7 @@ class RosBridge:
         self._rclpy = rclpy
         self._lock = threading.Lock()
         self._s = RosSnapshot()
-        self._clock_samples: Deque[Tuple[float, float]] = collections.deque(maxlen=400)
+        self._clock_samples: collections.deque[tuple[float, float]] = collections.deque(maxlen=400)
         self.robot_name = robot_name
         self.recorder = TelemetryRecorder(ContactMonitor(robot_name=robot_name))
         self.expect_ground_truth = False  # set per run: the robot was instrumented
@@ -172,7 +173,7 @@ class RosBridge:
         self._thread.start()
 
     @classmethod
-    def try_create(cls) -> Optional[RosBridge]:
+    def try_create(cls) -> RosBridge | None:
         try:
             return cls()
         except Exception:  # noqa: BLE001 - no ROS here (host tests) or rclpy failed to init
@@ -199,7 +200,7 @@ class RosBridge:
         if self._odom_drives_recording(now, last_gt):
             self._record(stamp_s(msg.header.stamp))
 
-    def _odom_drives_recording(self, now: float, last_gt: Optional[float]) -> bool:
+    def _odom_drives_recording(self, now: float, last_gt: float | None) -> bool:
         """Record from /odom (map/odom poses) only when ground truth is not coming.
 
         Stock robot: always. Instrumented robot: only after ground truth has been
@@ -238,7 +239,7 @@ class RosBridge:
             t = t if t > 0 else self._s.sim_time
         self.recorder.contacts.process(contact_pairs(entries, self.robot_name), t)
 
-    def _map_pose_now(self) -> Optional[Tuple[float, float, float]]:
+    def _map_pose_now(self) -> tuple[float, float, float] | None:
         try:
             from rclpy.time import Time
 
@@ -298,7 +299,7 @@ class RosBridge:
         return s
 
     def reset(
-        self, spawn: Optional[Tuple[float, float, float]] = None, expect_ground_truth: bool = False
+        self, spawn: tuple[float, float, float] | None = None, expect_ground_truth: bool = False
     ) -> None:
         """Forget state from a previous run (called on /sim/start with the run's spawn pose and
         whether the robot was instrumented with a ground-truth publisher)."""
@@ -313,7 +314,7 @@ class RosBridge:
     def record_start(
         self,
         label: str,
-        goal: Optional[Tuple[float, float, float]] = None,
+        goal: tuple[float, float, float] | None = None,
         rate_hz: float = 20.0,
         stream_path: Any = None,
     ) -> None:
@@ -322,10 +323,10 @@ class RosBridge:
         self._record_wall0 = time.time()
         self.recorder.start(label, goal=goal, rate_hz=rate_hz, spawn=spawn, stream_path=stream_path)
 
-    def record_stop(self, keep_partial: bool = False) -> Optional[Dict[str, Any]]:
+    def record_stop(self, keep_partial: bool = False) -> dict[str, Any] | None:
         return self.recorder.stop(keep_partial=keep_partial)
 
-    def live(self, goal: Optional[Tuple[float, float, float]] = None) -> Dict[str, Any]:
+    def live(self, goal: tuple[float, float, float] | None = None) -> dict[str, Any]:
         """TelemetryLive fields (core.models) for the current state."""
         s = self.snapshot()
         gt = s.ground_truth if s.fresh(s.ground_truth_wall) else None

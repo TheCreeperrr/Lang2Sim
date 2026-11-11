@@ -5,18 +5,19 @@ File: lang2sim/agent/tools.py
 
 import inspect
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 # 14 Typed Tool Implementations connected to Sim2Lang Core Components
 
 
 def solve_spatial_layout(
-    dimensions: Optional[Dict[str, float]] = None,
-    objects: Optional[list] = None,
-    room_dimensions: Optional[Dict[str, float]] = None,
+    dimensions: dict[str, float] | None = None,
+    objects: list | None = None,
+    room_dimensions: dict[str, float] | None = None,
     **kwargs,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Runs Shapely 2.0 geometry solver to calculate collision-free OBB bounds grounded in catalog."""
     try:
         import json
@@ -186,10 +187,10 @@ def solve_spatial_layout(
 
 
 def compile_world_sdf(
-    layout_spec: Dict[str, Any],
+    layout_spec: dict[str, Any],
     target_simulator: str = "ignition",
-    output_dir: Optional[str] = None,
-) -> Dict[str, Any]:
+    output_dir: str | None = None,
+) -> dict[str, Any]:
     """Compiles spatial layout into Gazebo SDF world and performs pre-flight verification."""
     try:
         import json
@@ -307,11 +308,11 @@ def compile_world_sdf(
 
 def generate_zero_slam_map(
     sdf_path: str = "",
-    output_dir: Optional[str] = None,
+    output_dir: str | None = None,
     resolution: float = 0.05,
-    active_project_dir: Optional[str] = None,
+    active_project_dir: str | None = None,
     **kwargs,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Direct 3D geometric slicing to map.yaml and map.pgm with real obstacle footprints."""
     t0 = time.time()
     try:
@@ -388,12 +389,12 @@ def generate_zero_slam_map(
 
 
 def launch_simulation_stack(
-    world_path: Optional[str] = None,
+    world_path: str | None = None,
     robot_model: str = "turtlebot3_waffle",
-    sdf_path: Optional[str] = None,
+    sdf_path: str | None = None,
     headless: bool = False,
     **kwargs,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Dispatches real Gazebo Harmonic GUI and ROS 2 Nav2 simulation stack via Part 3 SimSession."""
     import json
     import shutil
@@ -512,7 +513,7 @@ def launch_simulation_stack(
     }
 
 
-def inspect_topic_health(topic_name: str = "/scan", **kwargs) -> Dict[str, Any]:
+def inspect_topic_health(topic_name: str = "/scan", **kwargs) -> dict[str, Any]:
     """Verifies topic publication rates and active publisher count dynamically from Control API or container."""
     import json
     import re
@@ -580,7 +581,7 @@ def inspect_topic_health(topic_name: str = "/scan", **kwargs) -> Dict[str, Any]:
         }
 
 
-def spawn_dynamic_entity(model_name: str, x: float, y: float, z: float = 0.5) -> Dict[str, Any]:
+def spawn_dynamic_entity(model_name: str, x: float, y: float, z: float = 0.5) -> dict[str, Any]:
     """Dynamically drops obstacle into running Gazebo physics without reload."""
     t0 = time.time()
     try:
@@ -601,7 +602,7 @@ def spawn_dynamic_entity(model_name: str, x: float, y: float, z: float = 0.5) ->
     }
 
 
-def set_ambient_lighting(luminance: float) -> Dict[str, Any]:
+def set_ambient_lighting(luminance: float) -> dict[str, Any]:
     """Adjusts ambient lighting dynamically (1.0 = nominal, 0.15 = night/dim)."""
     return {
         "status": "success",
@@ -610,7 +611,7 @@ def set_ambient_lighting(luminance: float) -> Dict[str, Any]:
     }
 
 
-def reset_simulation(mode: str = "all") -> Dict[str, Any]:
+def reset_simulation(mode: str = "all") -> dict[str, Any]:
     """Sub-second world reset snapping robot back in <0.3s without restarting GUI."""
     import urllib.request
 
@@ -630,7 +631,7 @@ def reset_simulation(mode: str = "all") -> Dict[str, Any]:
     }
 
 
-def apply_chassis_perturbation(velocity_bias: Dict[str, float]) -> Dict[str, Any]:
+def apply_chassis_perturbation(velocity_bias: dict[str, float]) -> dict[str, Any]:
     """Applies traction loss or external disturbance velocity bias."""
     return {
         "status": "success",
@@ -638,7 +639,7 @@ def apply_chassis_perturbation(velocity_bias: Dict[str, float]) -> Dict[str, Any
     }
 
 
-def capture_gazebo_window() -> Dict[str, Any]:
+def capture_gazebo_window() -> dict[str, Any]:
     """Checks live status of the Gazebo GUI process on the host/container."""
     import subprocess
 
@@ -667,7 +668,7 @@ def capture_gazebo_window() -> Dict[str, Any]:
     }
 
 
-def capture_rviz_window() -> Dict[str, Any]:
+def capture_rviz_window() -> dict[str, Any]:
     """Checks live status of the RViz2 visualization process."""
     import subprocess
 
@@ -690,7 +691,7 @@ def capture_rviz_window() -> Dict[str, Any]:
     }
 
 
-def read_robot_camera(topic: str = "/camera/image_raw") -> Dict[str, Any]:
+def read_robot_camera(topic: str = "/camera/image_raw") -> dict[str, Any]:
     """Checks live optical stream from camera topic in ROS 2."""
     import re
     import subprocess
@@ -731,7 +732,7 @@ def read_robot_camera(topic: str = "/camera/image_raw") -> Dict[str, Any]:
         }
 
 
-def query_robot_telemetry() -> Dict[str, Any]:
+def query_robot_telemetry() -> dict[str, Any]:
     """Reads instantaneous kinematics, distance to goal, and contact forces.
 
     Live data from the control API (GET /v1/telemetry/live); {"status": "unavailable"}
@@ -742,7 +743,7 @@ def query_robot_telemetry() -> Dict[str, Any]:
     return agent_view(fetch_live())
 
 
-def auto_repair_tf(parent_frame: str = "map", child_frame: str = "odom") -> Dict[str, Any]:
+def auto_repair_tf(parent_frame: str = "map", child_frame: str = "odom") -> dict[str, Any]:
     """Injects static transform publisher if frames disconnect."""
     import subprocess
 
@@ -769,7 +770,7 @@ def auto_repair_tf(parent_frame: str = "map", child_frame: str = "odom") -> Dict
 def compute_navigation_benchmark(
     adversarial_stress: bool = False,
     adversarial_collisions: int = 0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Computes the Navigation Quality Index (NQI) benchmark and persists benchmark_report.json."""
     import io
 
@@ -811,7 +812,7 @@ def compute_navigation_benchmark(
         return {"status": "error", "error": str(e)}
 
 
-def run_command(command: str, timeout: int = 60, cwd: Optional[str] = None) -> Dict[str, Any]:
+def run_command(command: str, timeout: int = 60, cwd: str | None = None) -> dict[str, Any]:
     """Executes a shell command in the local environment or ROS 2 / Docker container."""
     import os
     import subprocess
@@ -882,8 +883,8 @@ def run_command(command: str, timeout: int = 60, cwd: Optional[str] = None) -> D
 
 
 def view_file(
-    path: str, start_line: Optional[int] = None, end_line: Optional[int] = None
-) -> Dict[str, Any]:
+    path: str, start_line: int | None = None, end_line: int | None = None
+) -> dict[str, Any]:
     """Reads lines from a file on the local filesystem."""
     try:
         p = Path(path).expanduser().resolve()
@@ -905,7 +906,7 @@ def view_file(
         return {"status": "error", "message": str(e)}
 
 
-def write_file(path: str, content: str) -> Dict[str, Any]:
+def write_file(path: str, content: str) -> dict[str, Any]:
     """Writes content to a file, creating parent directories if needed, and syncs to simulation container."""
     import subprocess
 
@@ -933,7 +934,7 @@ def write_file(path: str, content: str) -> Dict[str, Any]:
         return {"status": "error", "message": str(e)}
 
 
-def replace_file_content(path: str, target: str, replacement: str) -> Dict[str, Any]:
+def replace_file_content(path: str, target: str, replacement: str) -> dict[str, Any]:
     """Replaces target string in a file with replacement string."""
     try:
         p = Path(path).expanduser().resolve()
@@ -949,7 +950,7 @@ def replace_file_content(path: str, target: str, replacement: str) -> Dict[str, 
         return {"status": "error", "message": str(e)}
 
 
-def search_catalog(query: str = "", category: str = "all", **kwargs) -> Dict[str, Any]:
+def search_catalog(query: str = "", category: str = "all", **kwargs) -> dict[str, Any]:
     """Semantic and keyword search engine for example SDF scenes, world environments, and basic physical 3D blocks."""
     import json
 
@@ -1018,7 +1019,7 @@ def search_catalog(query: str = "", category: str = "all", **kwargs) -> Dict[str
 
 def send_navigation_goal(
     x: float = 2.0, y: float = 2.0, yaw: float = 0.0, timeout: float = 60.0, **kwargs
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Dispatches an autonomous Nav2 navigation goal to drive the robot to specified coordinates."""
     import json
     import urllib.request
@@ -1056,7 +1057,7 @@ def send_navigation_goal(
             return {"status": "success", "goal": {"x": x, "y": y, "yaw": yaw}, "note": str(e)}
 
 
-TOOL_REGISTRY: Dict[str, Callable] = {
+TOOL_REGISTRY: dict[str, Callable] = {
     "send_navigation_goal": send_navigation_goal,
     "search_catalog": search_catalog,
     "solve_spatial_layout": solve_spatial_layout,
@@ -1090,7 +1091,7 @@ MUTATING_TOOLS = {
 }
 
 
-def execute_tool(name: str, **kwargs) -> Dict[str, Any]:
+def execute_tool(name: str, **kwargs) -> dict[str, Any]:
     """Executes a tool from the registry safely, passing only accepted arguments."""
     if name not in TOOL_REGISTRY:
         return {"status": "error", "message": f"Unknown tool: {name}"}

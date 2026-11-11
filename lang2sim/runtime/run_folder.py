@@ -18,7 +18,6 @@ from __future__ import annotations
 import importlib
 import json
 from pathlib import Path
-from typing import Optional
 
 from lang2sim.core.models import Pose2D, RunManifest, SimSpec, SimStartRequest
 from lang2sim.runtime.docker_runner import host_to_container_path
@@ -64,12 +63,12 @@ def write_manifest(run_dir: Path, manifest: RunManifest) -> Path:
 
 def to_start_request(
     run_dir: Path,
-    manifest: Optional[RunManifest] = None,
+    manifest: RunManifest | None = None,
     *,
-    projects_dir: Optional[Path] = None,
+    projects_dir: Path | None = None,
     gui: bool = True,
     rviz: bool = True,
-    initial_pose: Optional[Pose2D] = None,
+    initial_pose: Pose2D | None = None,
 ) -> SimStartRequest:
     """Container-side SimStartRequest for a host run folder under projects_dir."""
     run_dir = Path(run_dir)

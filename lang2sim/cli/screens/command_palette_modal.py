@@ -3,14 +3,12 @@ Custom Command Palette Modal (ctrl+p)
 File: lang2sim/cli/screens/command_palette_modal.py
 """
 
-from typing import Dict, List, Optional
-
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Input, Static
 
-COMMANDS: List[Dict[str, str]] = [
+COMMANDS: list[dict[str, str]] = [
     # Suggested
     {
         "id": "switch_session",
@@ -87,7 +85,7 @@ COMMANDS: List[Dict[str, str]] = [
 ]
 
 
-class CommandPaletteModal(ModalScreen[Optional[str]]):
+class CommandPaletteModal(ModalScreen[str | None]):
     """Floating Command Palette Modal matching OpenCode UI."""
 
     BINDINGS = [
@@ -100,7 +98,7 @@ class CommandPaletteModal(ModalScreen[Optional[str]]):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.selected_index: int = 0
-        self.filtered_commands: List[Dict[str, str]] = list(COMMANDS)
+        self.filtered_commands: list[dict[str, str]] = list(COMMANDS)
 
     def compose(self):
         with Vertical(id="command-palette-dialog"):

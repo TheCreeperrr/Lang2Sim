@@ -16,7 +16,8 @@ from __future__ import annotations
 import asyncio
 import importlib
 import time
-from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
+from collections.abc import AsyncIterator, Sequence
+from typing import Any
 
 import httpx
 
@@ -42,7 +43,7 @@ cfg = importlib.import_module("lang2sim.core.config")
 
 
 class ControlAPIError(RuntimeError):
-    def __init__(self, message: str, status_code: Optional[int] = None):
+    def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message)
         self.status_code = status_code
 
@@ -58,9 +59,9 @@ def default_base_url() -> str:
 class ControlClient:
     def __init__(
         self,
-        base_url: Optional[str] = None,
+        base_url: str | None = None,
         timeout: float = 10.0,
-        transport: Optional[httpx.AsyncBaseTransport] = None,
+        transport: httpx.AsyncBaseTransport | None = None,
     ):
         self.base_url = (base_url or default_base_url()).rstrip("/")
         self._http = httpx.AsyncClient(
@@ -95,10 +96,10 @@ class ControlClient:
         return r.json()
 
     # --- endpoints -------------------------------------------------------
-    async def health(self) -> Dict[str, Any]:
+    async def health(self) -> dict[str, Any]:
         return await self._request("GET", "/health")
 
-    async def info(self) -> Dict[str, Any]:
+    async def info(self) -> dict[str, Any]:
         return await self._request("GET", "/info")
 
     async def sim_status(self) -> SimStatusResponse:
@@ -114,26 +115,26 @@ class ControlClient:
         )
         return SimStatusResponse.model_validate(data)
 
-    async def sim_logs(self, tail: int = 200) -> List[str]:
+    async def sim_logs(self, tail: int = 200) -> list[str]:
         return (await self._request("GET", "/sim/logs", params={"tail": tail}))["lines"]
 
     # --- Part 4 world mutation endpoints ---------------------------------
-    async def world_spawn(self, req: Dict[str, Any]) -> Dict[str, Any]:
+    async def world_spawn(self, req: dict[str, Any]) -> dict[str, Any]:
         return await self._request("POST", "/world/spawn", json=req)
 
-    async def world_light(self, req: Dict[str, Any]) -> Dict[str, Any]:
+    async def world_light(self, req: dict[str, Any]) -> dict[str, Any]:
         return await self._request("POST", "/world/light", json=req)
 
-    async def world_reset(self, req: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    async def world_reset(self, req: dict[str, Any] | None = None) -> dict[str, Any]:
         return await self._request("POST", "/world/reset", json=req or {})
 
-    async def world_chassis(self, req: Dict[str, Any]) -> Dict[str, Any]:
+    async def world_chassis(self, req: dict[str, Any]) -> dict[str, Any]:
         return await self._request("POST", "/world/chassis", json=req)
 
-    async def world_health(self) -> Dict[str, Any]:
+    async def world_health(self) -> dict[str, Any]:
         return await self._request("GET", "/world/health")
 
-    async def world_entities(self) -> Dict[str, Any]:
+    async def world_entities(self) -> dict[str, Any]:
         return await self._request("GET", "/world/entities")
 
     # --- navigation and telemetry -----------------------------------------------
@@ -172,11 +173,11 @@ class ControlClient:
     async def telemetry_live(self) -> TelemetryLive:
         return TelemetryLive.model_validate(await self._request("GET", "/telemetry/live"))
 
-    async def telemetry_setup(self) -> Dict[str, Any]:
+    async def telemetry_setup(self) -> dict[str, Any]:
         return await self._request("GET", "/telemetry/setup")
 
     async def record_start(
-        self, label: str = "run", goal: Optional[Pose2D] = None, rate_hz: float = 20.0
+        self, label: str = "run", goal: Pose2D | None = None, rate_hz: float = 20.0
     ) -> TelemetryLive:
         req = TelemetryRecordRequest(label=label, goal=goal, rate_hz=rate_hz)
         return TelemetryLive.model_validate(
@@ -188,7 +189,7 @@ class ControlClient:
             await self._request("POST", "/telemetry/record/stop")
         )
 
-    async def nav_feedback(self, hz: float = 5.0) -> AsyncIterator[Dict[str, Any]]:
+    async def nav_feedback(self, hz: float = 5.0) -> AsyncIterator[dict[str, Any]]:
         """Stream {"nav": NavStatus, "telemetry": SimStatus, "sim": {...}} dicts from WS /v1/nav/feedback.
 
         async for msg in api.nav_feedback():
@@ -218,10 +219,10 @@ class ControlClient:
     # --- helpers ---------------------------------------------------------
     async def wait_until_ready(
         self, timeout: float = 60.0, interval: float = 0.5
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Poll /health until it answers (container boot + uvicorn start)."""
         deadline = time.monotonic() + timeout
-        last: Optional[Exception] = None
+        last: Exception | None = None
         while time.monotonic() < deadline:
             try:
                 return await self.health()

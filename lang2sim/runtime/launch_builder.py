@@ -25,7 +25,6 @@ from __future__ import annotations
 import pprint
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import List
 
 LAUNCH_FILE = "sim_launch.py"
 
@@ -44,7 +43,7 @@ class LaunchConfig:
     camera: bool = True  # image bridge; heavy under software rendering
     nav2_params: str = ""  # "" -> TurtleBot3 Waffle params
     nav2_delay_s: float = 5.0
-    resource_paths: List[str] = field(default_factory=list)  # extra GZ_SIM_RESOURCE_PATH entries
+    resource_paths: list[str] = field(default_factory=list)  # extra GZ_SIM_RESOURCE_PATH entries
     robot: str = "waffle"
     robot_sdf: str = (
         ""  # "" -> stock TurtleBot3 model.sdf; else robot.l2s.sdf (bumper + ground truth)

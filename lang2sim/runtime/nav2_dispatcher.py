@@ -25,8 +25,9 @@ import math
 import queue
 import threading
 import time
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any, Callable, List, Optional, Sequence
+from typing import Any
 
 from lang2sim.core.models import NavStatus, Pose2D
 
@@ -67,7 +68,7 @@ def _seconds(duration: Any) -> float:
 @dataclass
 class _Task:
     kind: str  # "goal" | "waypoints" | "initial_pose"
-    poses: List[Pose2D]
+    poses: list[Pose2D]
     timeout_s: float = 120.0
 
 
@@ -84,9 +85,9 @@ class NavDispatcher:
         self._queue: queue.Queue[_Task] = queue.Queue()
         self._cancel = threading.Event()
         self._stop = threading.Event()
-        self._thread: Optional[threading.Thread] = None
+        self._thread: threading.Thread | None = None
         self._nav: Any = None
-        self._last: Optional[_Task] = None
+        self._last: _Task | None = None
 
     # --- API (any thread) ---------------------------------------------------
     def status(self) -> NavStatus:
@@ -104,13 +105,13 @@ class NavDispatcher:
             raise ValueError("at least one waypoint is required")
         return self._submit(_Task("waypoints", list(waypoints), timeout_s))
 
-    def remaining(self) -> List[Pose2D]:
+    def remaining(self) -> list[Pose2D]:
         """Poses of the current/last task from the leg in progress onwards (for re-planning)."""
         with self._lock:
             task, idx = self._last, self._status.waypoint_index
         return list(task.poses[idx:]) if task else []
 
-    def resume_with(self, first: Pose2D, timeout_s: Optional[float] = None) -> NavStatus:
+    def resume_with(self, first: Pose2D, timeout_s: float | None = None) -> NavStatus:
         """Replace the current leg's target with `first`, keep the rest of the mission."""
         rest = self.remaining()[1:]
         timeout = (

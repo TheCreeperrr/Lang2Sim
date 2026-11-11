@@ -3,7 +3,7 @@ Interactive Terminal Command & Permission Card Widget
 File: lang2sim/cli/widgets/command_card.py
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from textual.binding import Binding
 from textual.containers import Horizontal
@@ -120,7 +120,7 @@ class CommandCard(Widget):
         event_id: str,
         command: str,
         tool_name: str = "run_command",
-        arguments: Optional[Dict[str, Any]] = None,
+        arguments: dict[str, Any] | None = None,
         permission_required: bool = True,
         **kwargs,
     ):
@@ -131,7 +131,7 @@ class CommandCard(Widget):
         self.arguments = arguments or {}
         self.permission_required = permission_required
         self.status = "awaiting_permission" if permission_required else "running"
-        self.exit_code: Optional[int] = None
+        self.exit_code: int | None = None
         self.duration_str: str = "0.0s"
         self.stdout: str = ""
         self.stderr: str = ""

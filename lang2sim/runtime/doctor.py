@@ -16,7 +16,7 @@ import shutil
 import socket
 import sys
 from dataclasses import asdict, dataclass
-from typing import List, Literal, Optional
+from typing import Literal
 
 from lang2sim.runtime import hardware_probe
 from lang2sim.runtime import platform as host_platform
@@ -40,7 +40,7 @@ class CheckResult:
     name: str
     status: Status
     detail: str
-    fix: Optional[str] = None
+    fix: str | None = None
 
 
 def _port_free(port: int) -> bool:
@@ -54,17 +54,17 @@ def _port_free(port: int) -> bool:
 
 
 def run_checks(
-    plat: Optional[host_platform.HostPlatform] = None,
-    hw: Optional[hardware_probe.HardwareInfo] = None,
-    prefer_display: Optional[str] = None,
-    image: Optional[str] = None,
-    runner: Optional[DockerRunner] = None,
+    plat: host_platform.HostPlatform | None = None,
+    hw: hardware_probe.HardwareInfo | None = None,
+    prefer_display: str | None = None,
+    image: str | None = None,
+    runner: DockerRunner | None = None,
     check_api: bool = False,
-) -> List[CheckResult]:
+) -> list[CheckResult]:
     plat = plat or host_platform.detect()
     hw = hw or hardware_probe.probe()
     runner = runner or DockerRunner()
-    r: List[CheckResult] = []
+    r: list[CheckResult] = []
     d = plat.docker
 
     # Docker
@@ -133,7 +133,7 @@ def run_checks(
         )
 
     # Display plan
-    plan: Optional[DisplayPlan] = None
+    plan: DisplayPlan | None = None
     try:
         plan = choose_display(plat, hw, prefer=prefer_display)  # type: ignore[arg-type]
         r.append(CheckResult("display", "ok", plan.describe() + " — " + "; ".join(plan.reasons)))
@@ -265,7 +265,7 @@ async def _check_api() -> CheckResult:
         return CheckResult("control API", "warn", str(e), "Start the sim (it boots the container)")
 
 
-def format_report(results: List[CheckResult]) -> str:
+def format_report(results: list[CheckResult]) -> str:
     icon = {"ok": "✓", "warn": "!", "fail": "✗"}
     lines = []
     for c in results:
@@ -289,11 +289,11 @@ def format_report(results: List[CheckResult]) -> str:
     return "\n".join(lines)
 
 
-def exit_code(results: List[CheckResult]) -> int:
+def exit_code(results: list[CheckResult]) -> int:
     return 1 if any(c.status == "fail" for c in results) else 0
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="lang2sim doctor")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--display", choices=DISPLAY_MODES)

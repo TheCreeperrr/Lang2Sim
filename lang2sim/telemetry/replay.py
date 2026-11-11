@@ -30,9 +30,10 @@ import json
 import math
 import sys
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -66,11 +67,11 @@ class PlayedRun:
     v: np.ndarray
     w: np.ndarray
     clearance: np.ndarray  # chassis-to-obstacle, per sample (crate only after it appears)
-    loc_err: Optional[np.ndarray]
-    targets: List[tuple]
+    loc_err: np.ndarray | None
+    targets: list[tuple]
     target_idx: np.ndarray  # index of the waypoint being driven to, per sample
-    contacts: List[Dict[str, Any]]
-    crates: List[Dict[str, Any]]  # spawned entities, each with "appear_t" (sim seconds)
+    contacts: list[dict[str, Any]]
+    crates: list[dict[str, Any]]  # spawned entities, each with "appear_t" (sim seconds)
     nav_status: str
     contact_force_source: str
     pose_source: str
@@ -81,8 +82,8 @@ class PlayedRun:
 
 
 def _crate_times(
-    label: str, run_meta: Dict[str, Any], report: Optional[Dict[str, Any]], t0: float
-) -> List[Dict[str, Any]]:
+    label: str, run_meta: dict[str, Any], report: dict[str, Any] | None, t0: float
+) -> list[dict[str, Any]]:
     crates = [dict(e) for e in run_meta.get("spawned_entities") or []]
     fired = iter(
         [tr.get("fired_at_s") for tr in ((report or {}).get("stress") or {}).get("triggers") or []]
@@ -96,7 +97,7 @@ def _crate_times(
 
 
 def build_played_run(
-    label: str, data: Dict[str, Any], run_dir: Path, spec: Any, report: Optional[Dict[str, Any]]
+    label: str, data: dict[str, Any], run_dir: Path, spec: Any, report: dict[str, Any] | None
 ) -> PlayedRun:
     traj = Trajectory.from_dict(data)
     meta = data.get("meta") or {}
@@ -150,7 +151,7 @@ def build_played_run(
 class ReplayClock:
     """Which run and which sample to show at a given wall time."""
 
-    runs: List[PlayedRun]
+    runs: list[PlayedRun]
     speed: float = 1.0
     loop: bool = False
     started: float = field(default_factory=time.monotonic)
@@ -159,7 +160,7 @@ class ReplayClock:
     def cycle(self) -> float:
         return sum(r.duration / self.speed + PAUSE_BETWEEN_RUNS_S for r in self.runs)
 
-    def position(self, now: Optional[float] = None) -> tuple:
+    def position(self, now: float | None = None) -> tuple:
         """(run index, sample index, playing?) at wall time `now`."""
         elapsed = (now if now is not None else time.monotonic()) - self.started
         if self.loop and self.cycle > 0:
@@ -180,11 +181,11 @@ class ReplayClock:
         self.started = time.monotonic()
 
 
-def _f(v: Any, d: int = 3) -> Optional[float]:
+def _f(v: Any, d: int = 3) -> float | None:
     return None if v is None or not math.isfinite(float(v)) else round(float(v), d)
 
 
-def snapshot(clock: ReplayClock, now: Optional[float] = None) -> Dict[str, Any]:
+def snapshot(clock: ReplayClock, now: float | None = None) -> dict[str, Any]:
     """{"live": TelemetryLive fields, "nav": NavStatus fields, "sim": {...}} at wall time `now`."""
     ri, i, playing = clock.position(now)
     r = clock.runs[ri]
@@ -397,7 +398,7 @@ def create_replay_app(run_dir: Path, which: str = "both", speed: float = 1.0, lo
     return app
 
 
-def main(argv: Optional[Sequence[str]] = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description="Replay a recorded Lang2Sim run through the control API "
         "(demo fallback when the live sim is down)."

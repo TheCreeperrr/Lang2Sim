@@ -4,7 +4,6 @@ File: lang2sim/cli/widgets/telemetry_sidebar.py
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 from textual.containers import Vertical
 from textual.widget import Widget
@@ -20,7 +19,7 @@ class TelemetryData:
     robot_x: float = 0.0
     robot_y: float = 0.0
     speed: float = 0.0
-    clearance: Optional[float] = None
+    clearance: float | None = None
     bumper_force: float = 0.0
     collision_count: int = 0
     ate_drift_m: float = 0.0

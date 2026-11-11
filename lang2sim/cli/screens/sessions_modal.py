@@ -3,8 +3,6 @@ Sessions Modal (ctrl+s / Command Palette)
 File: lang2sim/cli/screens/sessions_modal.py
 """
 
-from typing import List, Optional
-
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
@@ -13,7 +11,7 @@ from textual.widgets import Input, Static
 from ...core.session_manager import ChatSession, session_manager
 
 
-class RenameModal(ModalScreen[Optional[str]]):
+class RenameModal(ModalScreen[str | None]):
     """Small popup modal to rename a session."""
 
     DEFAULT_CSS = """
@@ -68,7 +66,7 @@ class RenameModal(ModalScreen[Optional[str]]):
         self.dismiss(None)
 
 
-class SessionsModal(ModalScreen[Optional[str]]):
+class SessionsModal(ModalScreen[str | None]):
     """Modal dialog displaying grouped chat sessions with search, pin, delete, and rename."""
 
     BINDINGS = [
@@ -81,11 +79,11 @@ class SessionsModal(ModalScreen[Optional[str]]):
         Binding("ctrl+r", "rename_selected", "Rename", show=False),
     ]
 
-    def __init__(self, workspace_name: Optional[str] = None, **kwargs):
+    def __init__(self, workspace_name: str | None = None, **kwargs):
         super().__init__(**kwargs)
         self.workspace_name = workspace_name
-        self.all_sessions: List[ChatSession] = []
-        self.filtered_sessions: List[ChatSession] = []
+        self.all_sessions: list[ChatSession] = []
+        self.filtered_sessions: list[ChatSession] = []
         self.selected_index: int = 0
 
     def compose(self):
@@ -224,7 +222,7 @@ class SessionsModal(ModalScreen[Optional[str]]):
         if self.filtered_sessions and 0 <= self.selected_index < len(self.filtered_sessions):
             target = self.filtered_sessions[self.selected_index]
 
-            def on_renamed(new_name: Optional[str]) -> None:
+            def on_renamed(new_name: str | None) -> None:
                 if new_name:
                     session_manager.rename_session(target.id, new_name)
                     self.load_and_refresh()

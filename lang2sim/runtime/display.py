@@ -16,7 +16,7 @@ entrypoint reads the same values from L2S_DISPLAY_MODE / L2S_GPU / L2S_FOXGLOVE.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Literal, Optional, Tuple
+from typing import Literal
 
 from lang2sim.runtime.hardware_probe import LOW_VRAM_MB, HardwareInfo
 from lang2sim.runtime.platform import HostPlatform
@@ -25,7 +25,7 @@ DisplayMode = Literal["x11", "wslg", "vnc", "headless"]
 GpuMode = Literal["nvidia", "dri", "software"]
 ImageVariant = Literal["sim", "sim-vnc"]
 
-DISPLAY_MODES: Tuple[str, ...] = ("x11", "wslg", "vnc", "headless")
+DISPLAY_MODES: tuple[str, ...] = ("x11", "wslg", "vnc", "headless")
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ class DisplayPlan:
     mode: DisplayMode
     gpu: GpuMode
     foxglove: bool
-    reasons: Tuple[str, ...] = field(default_factory=tuple)
+    reasons: tuple[str, ...] = field(default_factory=tuple)
 
     @property
     def image_variant(self) -> ImageVariant:
@@ -61,7 +61,7 @@ class DisplayPlan:
         return f"{view}{extra} [render: {self.gpu}]"
 
 
-def _gpu_for_linux_host(platform: HostPlatform, hw: HardwareInfo, reasons: List[str]) -> GpuMode:
+def _gpu_for_linux_host(platform: HostPlatform, hw: HardwareInfo, reasons: list[str]) -> GpuMode:
     # On hybrid AMD/NVIDIA laptops under Wayland, Nvidia GLX direct context on AMD Xwayland fails with GLXBadFBConfig.
     # Fall back to software rendering for 100% crash-free stability.
     is_hybrid_wayland = bool(
@@ -97,12 +97,12 @@ def _gpu_for_linux_host(platform: HostPlatform, hw: HardwareInfo, reasons: List[
 def choose_display(
     platform: HostPlatform,
     hw: HardwareInfo,
-    prefer: Optional[DisplayMode] = None,
+    prefer: DisplayMode | None = None,
     force_software: bool = False,
-    foxglove: Optional[bool] = None,
+    foxglove: bool | None = None,
 ) -> DisplayPlan:
     """Pick the display/GPU plan for this host. `prefer` overrides the mode."""
-    reasons: List[str] = []
+    reasons: list[str] = []
     if prefer is not None and prefer not in DISPLAY_MODES:
         raise ValueError(f"unknown display mode {prefer!r}; expected one of {DISPLAY_MODES}")
 
