@@ -20,7 +20,10 @@ import shutil
 import time
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from lang2sim.telemetry.nqi_scorer import NQIParams
 
 from lang2sim.core.models import (
     NavStatus,
@@ -246,7 +249,7 @@ class SimSession:
         on_progress: NavProgressFn | None = None,
         on_trigger: TriggerFn | None = None,
         poll_s: float = 0.5,
-        params: Any = None,
+        params: NQIParams | None = None,
     ) -> RecordedRun:
         """Drive spec.json's mission with telemetry recording, fire adversarial triggers on the way,
         and score the run (NQI). Recording always stops, even if the mission errors."""
@@ -325,7 +328,7 @@ class SimSession:
         on_progress: NavProgressFn | None = None,
         on_trigger: TriggerFn | None = None,
         on_phase: Callable[[str], None] | None = None,
-        params: Any = None,
+        params: NQIParams | None = None,
         poll_s: float = 0.5,
         goal_tolerance: float | None = None,
     ) -> dict[str, Any]:
@@ -403,16 +406,35 @@ class SimSession:
         report["path"] = str(path)
         return report
 
-    async def score_single_run(self, run_dir: Path | None = None, **kw: Any) -> dict[str, Any]:
+    async def score_single_run(
+        self,
+        run_dir: Path | None = None,
+        *,
+        triggers: Sequence[Mapping[str, Any]] = (),
+        rate_hz: float = 20.0,
+        on_progress: NavProgressFn | None = None,
+        on_trigger: TriggerFn | None = None,
+        poll_s: float = 0.5,
+        params: NQIParams | None = None,
+        goal_tolerance: float | None = None,
+    ) -> dict[str, Any]:
         """Drive the mission once with recording and write a nominal-only benchmark_report.json."""
         from lang2sim.telemetry.benchmark import scoring_params, write_benchmark
 
         run_dir = Path(run_dir or self.run_dir or ".")
-        params, scoring = kw.pop("params", None), None
+        scoring = None
         if params is None:
-            params, scoring = scoring_params(run_dir, kw.pop("goal_tolerance", None))
-        kw.pop("goal_tolerance", None)
-        run = await self.run_recorded_mission(run_dir, label="nominal", params=params, **kw)
+            params, scoring = scoring_params(run_dir, goal_tolerance)
+        run = await self.run_recorded_mission(
+            run_dir,
+            label="nominal",
+            triggers=triggers,
+            rate_hz=rate_hz,
+            on_progress=on_progress,
+            on_trigger=on_trigger,
+            poll_s=poll_s,
+            params=params,
+        )
         path, report = write_benchmark(
             run_dir,
             run.scored,

@@ -16,7 +16,9 @@ def solve_spatial_layout(
     dimensions: dict[str, float] | None = None,
     objects: list | None = None,
     room_dimensions: dict[str, float] | None = None,
-    **kwargs: Any,
+    room: dict[str, float] | None = None,
+    items: list | None = None,
+    **kwargs: object,
 ) -> dict[str, Any]:
     """Runs Shapely 2.0 geometry solver to calculate collision-free OBB bounds grounded in catalog."""
     try:
@@ -27,8 +29,8 @@ def solve_spatial_layout(
         from lang2sim.world_gen.catalog_loader import catalog
         from lang2sim.world_gen.shapely_solver import ShapelySpatialSolver
 
-        dims = room_dimensions or dimensions or kwargs.get("room") or {}
-        objs = objects if objects is not None else kwargs.get("items", [])
+        dims = room_dimensions or dimensions or room or {}
+        objs = objects if objects is not None else (items or [])
         dim_x = float(dims.get("x") or dims.get("width") or dims.get("length") or 14.0)
         dim_y = float(dims.get("y") or dims.get("height") or dims.get("depth") or 10.0)
         env = EnvironmentSpec(room_dimensions=Vector3D(x=dim_x, y=dim_y, z=4.0))
@@ -311,7 +313,8 @@ def generate_zero_slam_map(
     output_dir: str | None = None,
     resolution: float = 0.05,
     active_project_dir: str | None = None,
-    **kwargs: Any,
+    project_dir: str | None = None,
+    **kwargs: object,
 ) -> dict[str, Any]:
     """Direct 3D geometric slicing to map.yaml and map.pgm with real obstacle footprints."""
     t0 = time.time()
@@ -321,7 +324,7 @@ def generate_zero_slam_map(
         from lang2sim.core.models import ObjectSpec, Pose2D, Vector3D
         from lang2sim.world_gen.map_slicer import slice_map_from_layout
 
-        target_dir = output_dir or active_project_dir or kwargs.get("project_dir")
+        target_dir = output_dir or active_project_dir or project_dir
         out_dir = (
             Path(target_dir).expanduser()
             if target_dir
@@ -393,7 +396,8 @@ def launch_simulation_stack(
     robot_model: str = "turtlebot3_waffle",
     sdf_path: str | None = None,
     headless: bool = False,
-    **kwargs: Any,
+    world: str | None = None,
+    **kwargs: object,
 ) -> dict[str, Any]:
     """Dispatches real Gazebo Harmonic GUI and ROS 2 Nav2 simulation stack via Part 3 SimSession."""
     import json
@@ -404,7 +408,7 @@ def launch_simulation_stack(
     from pathlib import Path
 
     # Resolve world path
-    target_path = sdf_path or world_path or kwargs.get("world") or "world.l2s.sdf"
+    target_path = sdf_path or world_path or world or "world.l2s.sdf"
     expanded_world = Path(target_path).expanduser()
     if not expanded_world.is_absolute():
         expanded_world = Path("~/.lang2sim/projects/active_project").expanduser() / target_path
@@ -513,7 +517,7 @@ def launch_simulation_stack(
     }
 
 
-def inspect_topic_health(topic_name: str = "/scan", **kwargs: Any) -> dict[str, Any]:
+def inspect_topic_health(topic_name: str = "/scan", **kwargs: object) -> dict[str, Any]:
     """Verifies topic publication rates and active publisher count dynamically from Control API or container."""
     import json
     import re
@@ -950,7 +954,7 @@ def replace_file_content(path: str, target: str, replacement: str) -> dict[str, 
         return {"status": "error", "message": str(e)}
 
 
-def search_catalog(query: str = "", category: str = "all", **kwargs: Any) -> dict[str, Any]:
+def search_catalog(query: str = "", category: str = "all", **kwargs: object) -> dict[str, Any]:
     """Semantic and keyword search engine for example SDF scenes, world environments, and basic physical 3D blocks."""
     import json
 
@@ -1022,7 +1026,7 @@ def send_navigation_goal(
     y: float = 2.0,
     yaw: float = 0.0,
     timeout: float = 60.0,
-    **kwargs: Any,
+    **kwargs: object,
 ) -> dict[str, Any]:
     """Dispatches an autonomous Nav2 navigation goal to drive the robot to specified coordinates."""
     import json
@@ -1061,7 +1065,7 @@ def send_navigation_goal(
             return {"status": "success", "goal": {"x": x, "y": y, "yaw": yaw}, "note": str(e)}
 
 
-TOOL_REGISTRY: dict[str, Callable] = {
+TOOL_REGISTRY: dict[str, Callable[..., dict[str, Any]]] = {
     "send_navigation_goal": send_navigation_goal,
     "search_catalog": search_catalog,
     "solve_spatial_layout": solve_spatial_layout,
@@ -1095,7 +1099,7 @@ MUTATING_TOOLS = {
 }
 
 
-def execute_tool(name: str, **kwargs: Any) -> dict[str, Any]:
+def execute_tool(name: str, **kwargs: object) -> dict[str, Any]:
     """Executes a tool from the registry safely, passing only accepted arguments."""
     if name not in TOOL_REGISTRY:
         return {"status": "error", "message": f"Unknown tool: {name}"}

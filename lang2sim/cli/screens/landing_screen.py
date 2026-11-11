@@ -71,6 +71,7 @@ class LandingScreen(Screen):
     """The initial landing screen matching the reference image."""
 
     def compose(self) -> ComposeResult:
+        """Build the initial prompt screen and workspace footer."""
         with Center(id="landing-container"):
             with Vertical(id="landing-inner"):
                 yield Static(LOGO_TEXT, id="landing-logo")
@@ -97,6 +98,7 @@ class LandingScreen(Screen):
             yield Static("[#6b7280]lang2sim 2.0.0[/]", classes="footer-right")
 
     def on_mount(self) -> None:
+        """Focus the prompt input when the landing screen is shown."""
         self.query_one(PromptCard).focus_input()
 
     def on_prompt_card_submitted(self, message: PromptCard.Submitted) -> None:

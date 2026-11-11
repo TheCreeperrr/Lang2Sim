@@ -39,14 +39,17 @@ class DockerInfo:
 
     @property
     def installed(self) -> bool:
+        """Report whether a Docker CLI executable was found."""
         return self.cli_path is not None
 
     @property
     def is_desktop(self) -> bool:
+        """Report whether the Docker daemon identifies itself as Docker Desktop."""
         return bool(self.operating_system and "Docker Desktop" in self.operating_system)
 
     @property
     def has_nvidia_runtime(self) -> bool:
+        """Report whether the Docker daemon exposes an NVIDIA runtime."""
         return "nvidia" in self.runtimes
 
 
@@ -63,6 +66,7 @@ class HostPlatform:
 
     @property
     def display(self) -> str | None:
+        """Return the host DISPLAY value, or ``None`` when it is unset."""
         return self.env.get("DISPLAY") or None
 
 

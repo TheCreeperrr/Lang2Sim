@@ -66,13 +66,14 @@ class PromptCard(Widget):
         self,
         placeholder: str = "Ask anything.. 'Spawn 14x10m warehouse with 8 racks, send AMR to rack 5'",
         card_id: str = "prompt-input",
-        **kwargs,
+        **kwargs: object,
     ) -> None:
         super().__init__(**kwargs)
         self.placeholder_text = placeholder
         self.card_id = card_id
 
     def compose(self) -> ComposeResult:
+        """Render the prompt input and model status badges."""
         with Vertical():
             yield Input(placeholder=self.placeholder_text, id=self.card_id)
             yield Static(
@@ -83,12 +84,14 @@ class PromptCard(Widget):
             )
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Trim and emit non-empty prompt submissions, then clear the input."""
         value = event.value.strip()
         if value:
             event.input.value = ""
             self.post_message(self.Submitted(value))
 
     def focus_input(self) -> None:
+        """Focus the nested prompt input when it is available."""
         try:
             inp = self.query_one(Input)
             inp.focus()

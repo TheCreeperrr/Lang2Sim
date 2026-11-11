@@ -27,14 +27,19 @@ import threading
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 from lang2sim.core.models import NavStatus, Pose2D
 
 POLL_S = 0.1
 
 
-def _ros_navigator() -> Any:
+class _RosDuration(Protocol):
+    sec: int
+    nanosec: int
+
+
+def _ros_navigator() -> Any:  # noqa: ANN401 - navigator is provided by optional ROS packages
     from nav2_simple_commander.robot_navigator import (
         BasicNavigator,  # type: ignore[import-not-found]
     )
@@ -45,7 +50,7 @@ def _ros_navigator() -> Any:
     return nav
 
 
-def _ros_pose(nav: Any, p: Pose2D) -> Any:
+def _ros_pose(nav: Any, p: Pose2D) -> Any:  # noqa: ANN401 - ROS pose messages are runtime-only
     from geometry_msgs.msg import PoseStamped  # type: ignore[import-not-found]
 
     ps = PoseStamped()
@@ -56,7 +61,7 @@ def _ros_pose(nav: Any, p: Pose2D) -> Any:
     return ps
 
 
-def _seconds(duration: Any) -> float:
+def _seconds(duration: int | float | _RosDuration | None) -> float:
     """builtin_interfaces/Duration (or a float in tests) -> seconds."""
     if duration is None:
         return 0.0
@@ -99,16 +104,20 @@ class NavDispatcher:
 
     # --- API (any thread) ---------------------------------------------------
     def status(self) -> NavStatus:
+        """Return a defensive copy of the current navigation status."""
         with self._lock:
             return self._status.model_copy()
 
     def set_initial_pose(self, pose: Pose2D) -> None:
+        """Queue an initial localization pose for the navigation worker."""
         self._submit(_Task("initial_pose", [pose]))
 
     def go_to(self, goal: Pose2D, timeout_s: float = 120.0) -> NavStatus:
+        """Submit a single navigation goal with a timeout in seconds."""
         return self._submit(_Task("goal", [goal], timeout_s))
 
     def follow(self, waypoints: Sequence[Pose2D], timeout_s: float = 180.0) -> NavStatus:
+        """Submit an ordered waypoint task, requiring at least one waypoint."""
         if not waypoints:
             raise ValueError("at least one waypoint is required")
         return self._submit(_Task("waypoints", list(waypoints), timeout_s))
@@ -130,12 +139,14 @@ class NavDispatcher:
         return self.go_to(first, timeout)
 
     def cancel(self) -> NavStatus:
+        """Cancel active navigation and return the latest task status."""
         self._drain()
         if self.status().is_active:
             self._cancel.set()
         return self.status()
 
     def shutdown(self) -> None:
+        """Stop the navigation worker and wait briefly for its thread to exit."""
         self._stop.set()
         self._cancel.set()
         if self._thread:
@@ -172,7 +183,7 @@ class NavDispatcher:
         self._thread = threading.Thread(target=self._worker, name="l2s-nav", daemon=True)
         self._thread.start()
 
-    def _set(self, **kw: Any) -> None:
+    def _set(self, **kw: object) -> None:
         with self._lock:
             self._status = self._status.model_copy(update=kw)
 

@@ -27,7 +27,11 @@ class ActionPill(Widget):
     status = reactive("running")  # running, completed, error
 
     def __init__(
-        self, tool_name: str, duration_str: str = "0.4s", status: str = "completed", **kwargs
+        self,
+        tool_name: str,
+        duration_str: str = "0.4s",
+        status: str = "completed",
+        **kwargs: object,
     ) -> None:
         super().__init__(classes="action-pill", **kwargs)
         self.tool_name = tool_name
@@ -35,6 +39,7 @@ class ActionPill(Widget):
         self.status = status
 
     def compose(self) -> ComposeResult:
+        """Render the tool name, duration, and current status."""
         yield Static(self._format_content(), id="pill-content")
 
     def _format_content(self) -> str:
@@ -48,6 +53,7 @@ class ActionPill(Widget):
         return f"{icon}  [bold #f1f2f6]{self.tool_name}[/] · [#a4b0be]{self.duration_str}[/] · {status_text}"
 
     def set_running(self) -> None:
+        """Set the pill to running and refresh its visible status."""
         self.status = "running"
         try:
             self.query_one("#pill-content", Static).update(self._format_content())
@@ -55,6 +61,7 @@ class ActionPill(Widget):
             pass
 
     def set_completed(self, duration: str = "0.5s") -> None:
+        """Mark the tool as completed and display its elapsed duration."""
         self.status = "completed"
         self.duration_str = duration
         try:
@@ -63,6 +70,7 @@ class ActionPill(Widget):
             pass
 
     def set_failed(self, duration: str = "0.5s") -> None:
+        """Mark the tool as failed and display its elapsed duration."""
         self.status = "error"
         self.duration_str = duration
         try:

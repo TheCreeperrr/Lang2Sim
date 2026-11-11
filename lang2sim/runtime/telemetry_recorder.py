@@ -100,6 +100,7 @@ class ContactEvent:
     source: str  # "wrench" | "geometric"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize event time, entity, force, and measurement source."""
         return {
             "t": round(self.t, 3),
             "entity": self.entity,
@@ -141,6 +142,7 @@ class ContactMonitor:
         self.reset()
 
     def reset(self) -> None:
+        """Clear collision counters, events, and contact timing state."""
         self.count = 0
         self.events: list[ContactEvent] = []
         self.in_contact = False
@@ -236,24 +238,29 @@ class TelemetryRecorder:
 
     @property
     def recording(self) -> bool:
+        """Report whether a telemetry recording is currently active."""
         return self._run is not None
 
     @property
     def label(self) -> str | None:
+        """Return the active recording label, or ``None`` when idle."""
         run = self._run
         return run.label if run else None
 
     @property
     def goal(self) -> Pose | None:
+        """Return the active recording goal pose, or ``None`` when idle."""
         run = self._run
         return run.goal if run else None
 
     @property
     def sample_count(self) -> int:
+        """Return the number of samples in the active recording."""
         run = self._run
         return len(run.samples) if run else 0
 
     def collisions(self) -> int:
+        """Return collisions counted since the current recording began."""
         run = self._run
         return self.contacts.count - (run.start_count if run else 0)
 

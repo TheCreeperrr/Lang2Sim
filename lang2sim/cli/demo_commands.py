@@ -244,7 +244,7 @@ Say = Callable[[str], None]
 Show = Callable[[Any], None]
 
 
-def _f(v: Any, d: int = 2, unit: str = "") -> str:
+def _f(v: int | float | str | None, d: int = 2, unit: str = "") -> str:
     return "–" if v is None else f"{float(v):.{d}f}{unit}"
 
 
@@ -292,6 +292,7 @@ class DemoRunner:
         return d
 
     async def run(self, cmd: Command) -> None:
+        """Dispatch a parsed command and report handler failures in the chat."""
         handler: Callable[[Command], Awaitable[None]] = getattr(self, f"cmd_{cmd.name}")
         if cmd.note:
             self.say(f"[#8b98a8]{cmd.note}[/]")
@@ -315,9 +316,11 @@ class DemoRunner:
 
     # --- commands ----------------------------------------------------------
     async def cmd_help(self, cmd: Command) -> None:
+        """Display the available demo commands and their usage."""
         self.say(HELP)
 
     async def cmd_status(self, cmd: Command) -> None:
+        """Fetch and display simulation, navigation, and live telemetry status."""
         s = self._session()
         try:
             health = await s.api.health()
@@ -358,6 +361,7 @@ class DemoRunner:
         self.say("\n".join(lines))
 
     async def cmd_dashboard(self, cmd: Command) -> None:
+        """Open the simulation dashboard in a browser when possible."""
         url = f"{self.base_url}/dashboard"
         try:
             opened = webbrowser.open(url)
@@ -368,6 +372,7 @@ class DemoRunner:
         )
 
     async def cmd_report(self, cmd: Command) -> None:
+        """Fetch and display the benchmark report for the loaded run."""
         s = self._session()
         try:
             report = await s.api._request("GET", "/run/report")
@@ -376,6 +381,7 @@ class DemoRunner:
         self.show_report(report)
 
     def show_report(self, report: dict[str, Any]) -> None:
+        """Render a benchmark comparison table and concise score summary in the chat."""
         from lang2sim.telemetry.nqi_scorer import render_comparison_table
 
         self.show(render_comparison_table(report))
@@ -400,6 +406,7 @@ class DemoRunner:
             )
 
     async def cmd_stress(self, cmd: Command) -> None:
+        """Apply requested lighting or obstacle perturbations to the active world."""
         light, model = stress_targets(cmd)
         ahead = float(cmd.opts.get("ahead", 1.5))
         s = self._session()
@@ -455,6 +462,7 @@ class DemoRunner:
             await s.stop()
 
     async def cmd_mission(self, cmd: Command) -> None:
+        """Record and score one nominal or adversarial mission run."""
         label = (
             "adversarial"
             if any(a.lower() in ("stress", "adversarial") for a in cmd.args)
@@ -492,6 +500,7 @@ class DemoRunner:
             self.mission_lock.release()
 
     async def cmd_benchmark(self, cmd: Command) -> None:
+        """Run nominal and adversarial missions and display their benchmark report."""
         light = float(cmd.opts.get("light", 0.1))
         if not self.mission_lock.acquire(blocking=False):
             self.say("[#f39c12]A mission is already running.[/]")
@@ -528,6 +537,7 @@ class DemoRunner:
             self.mission_lock.release()
 
     async def cmd_replay(self, cmd: Command) -> None:
+        """Start a local replay server for the selected recorded run."""
         target = Path(cmd.args[0]).expanduser() if cmd.args and cmd.args[0] != "demo" else DEMO_RUN
         port = (
             int(self.base_url.rsplit(":", 1)[-1])

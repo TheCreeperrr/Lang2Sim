@@ -54,7 +54,7 @@ class PlanCard(Widget):
         self,
         steps: list[str],
         title: str = "Autonomous Execution Plan",
-        **kwargs,
+        **kwargs: object,
     ) -> None:
         super().__init__(**kwargs)
         self.plan_title = title
@@ -66,6 +66,7 @@ class PlanCard(Widget):
             self.steps[0]["status"] = "running"
 
     def compose(self) -> ComposeResult:
+        """Render the plan title, completion counter, and each execution step."""
         with Horizontal(classes="plan-header"):
             yield Static(f"📋 [bold #f1f2f6]{self.plan_title}[/]", classes="plan-title")
             yield Static(self._format_counter(), id="plan-counter", classes="plan-counter")

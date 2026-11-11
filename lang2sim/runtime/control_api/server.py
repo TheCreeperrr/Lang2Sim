@@ -47,7 +47,7 @@ import threading
 import time
 from collections.abc import AsyncIterator, Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
     from lang2sim.runtime.nav2_dispatcher import NavDispatcher
@@ -81,6 +81,19 @@ from lang2sim.runtime.control_api import API_PREFIX
 from lang2sim.runtime.health_monitor import HealthMonitor
 from lang2sim.runtime.ros_bridge import readiness
 from lang2sim.runtime.self_healing import NodeControl, Observation, SelfHealer, classify
+
+
+class _RecordingBridge(Protocol):
+    def record_start(
+        self,
+        label: str,
+        goal: tuple[float, float, float] | None = None,
+        rate_hz: float = 20.0,
+        stream_path: Path | None = None,
+    ) -> None: ...
+
+    def record_stop(self, keep_partial: bool = False) -> dict[str, Any] | None: ...
+
 
 RUNTIME_ENV_FILE = Path(os.getenv("L2S_RUNTIME_ENV_FILE", "/tmp/l2s_runtime.env"))
 LOG_RING_LINES = 2000
@@ -235,11 +248,13 @@ class SimProcess:
 
     # Overridden in tests.
     def build_command(self, req: SimStartRequest) -> list[str]:
+        """Build the ROS launch command for a simulation start request."""
         return ["ros2", "launch", str(self.launch_file)]
 
     # --- lifecycle -----------------------------------------------------------
     @property
     def alive(self) -> bool:
+        """Report whether the simulation subprocess is still running."""
         return self.proc is not None and self.proc.poll() is None
 
     def status(self, ready: bool | None = None) -> str:
@@ -261,6 +276,7 @@ class SimProcess:
         return "degraded" if self.was_ready else "launching"
 
     def start(self, req: SimStartRequest) -> None:
+        """Prepare run files, launch the simulation process, and capture its logs."""
         with self._lock:
             if self.alive:
                 raise RuntimeError("simulation already running")
@@ -301,6 +317,7 @@ class SimProcess:
                 fh.close()
 
     def stop(self, force: bool = False, grace_s: float = 15.0) -> None:
+        """Stop the simulation process, escalating to a kill after the grace period."""
         with self._lock:
             proc = self.proc
             self.stopped = True
@@ -331,6 +348,7 @@ class SimProcess:
                     pass
 
     def tail(self, n: int) -> list[str]:
+        """Return the latest ``n`` lines retained in the in-memory log buffer."""
         return list(self.log)[-n:]
 
     def lines_since(self, seen: int) -> tuple:
@@ -351,7 +369,7 @@ HEAL_PERIOD_S = 2.0
 def create_app(
     sim: SimProcess | None = None,
     use_ros: bool = True,
-    nav: Any = None,
+    nav: NavDispatcher | None = None,
     node_control: Callable[[Path], Any] | None = None,
 ) -> FastAPI:
     """`use_ros=False` (tests) skips the rclpy bridge and the healer thread; both are also
@@ -643,7 +661,7 @@ def create_app(
         clear_spawn_log()
         set_spawn_log_file(str(logs_dir / "spawns.jsonl") if logs_dir is not None else None)
 
-    def recording_bridge() -> Any:
+    def recording_bridge() -> _RecordingBridge:
         bridge = state["bridge"]
         if bridge is None or not hasattr(bridge, "record_start"):
             raise HTTPException(

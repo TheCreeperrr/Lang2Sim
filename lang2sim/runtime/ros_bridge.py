@@ -26,7 +26,7 @@ import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from lang2sim.runtime import robot_instrument
 from lang2sim.runtime.telemetry_recorder import (
@@ -43,6 +43,11 @@ NAV2_NODES = ("amcl", "bt_navigator", "controller_server", "planner_server")
 GROUND_TRUTH_STALE_S = (
     1.0  # fall back to map/odom poses when ground truth stops arriving (wall time)
 )
+
+
+class _RosTime(Protocol):
+    sec: int
+    nanosec: int
 
 
 def yaw_from_quaternion(x: float, y: float, z: float, w: float) -> float:
@@ -84,7 +89,7 @@ class RosSnapshot:
         return t is not None and self.now - t <= FRESH_S
 
 
-def stamp_s(stamp: Any) -> float:
+def stamp_s(stamp: _RosTime) -> float:
     """builtin_interfaces/Time -> seconds."""
     return float(stamp.sec) + float(stamp.nanosec) * 1e-9
 
@@ -186,7 +191,7 @@ class RosBridge:
             return None
 
     # --- callbacks (executor threads) -------------------------------------
-    def _on_clock(self, msg: Any) -> None:
+    def _on_clock(self, msg: Any) -> None:  # noqa: ANN401 - generated ROS message type
         now = time.time()
         sim = msg.clock.sec + msg.clock.nanosec * 1e-9
         with self._lock:
@@ -195,7 +200,7 @@ class RosBridge:
             while self._clock_samples and now - self._clock_samples[0][0] > RTF_WINDOW_S:
                 self._clock_samples.popleft()
 
-    def _on_odom(self, msg: Any) -> None:
+    def _on_odom(self, msg: Any) -> None:  # noqa: ANN401 - generated ROS message type
         p, q, t = msg.pose.pose.position, msg.pose.pose.orientation, msg.twist.twist
         now = time.time()
         with self._lock:
@@ -218,20 +223,20 @@ class RosBridge:
         ref = last_gt if last_gt is not None else self._record_wall0
         return now - ref > GROUND_TRUTH_STALE_S
 
-    def _on_ground_truth(self, msg: Any) -> None:
+    def _on_ground_truth(self, msg: Any) -> None:  # noqa: ANN401 - generated ROS message type
         p, q = msg.pose.pose.position, msg.pose.pose.orientation
         with self._lock:
             self._s.ground_truth_wall = time.time()
             self._s.ground_truth = (p.x, p.y, yaw_from_quaternion(q.x, q.y, q.z, q.w))
         self._record(stamp_s(msg.header.stamp))
 
-    def _on_scan(self, msg: Any) -> None:
+    def _on_scan(self, msg: Any) -> None:  # noqa: ANN401 - generated ROS message type
         m = min_valid_range(msg.ranges, msg.range_min, msg.range_max)
         with self._lock:
             self._s.scan_wall = time.time()
             self._s.scan_min = m
 
-    def _on_contacts(self, msg: Any) -> None:
+    def _on_contacts(self, msg: Any) -> None:  # noqa: ANN401 - generated ROS message type
         entries = []
         for c in msg.contacts:
             forces = []
@@ -286,7 +291,7 @@ class RosBridge:
             fut = client.call_async(self._GetState.Request())
             fut.add_done_callback(lambda f, n=name: self._on_state(n, f))
 
-    def _on_state(self, name: str, fut: Any) -> None:
+    def _on_state(self, name: str, fut: Any) -> None:  # noqa: ANN401 - ROS service future
         try:
             label = fut.result().current_state.label
         except Exception:  # noqa: BLE001

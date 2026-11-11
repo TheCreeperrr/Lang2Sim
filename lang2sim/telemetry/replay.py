@@ -30,18 +30,25 @@ import json
 import math
 import sys
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI as FastAPIType
+    from fastapi import WebSocket as WebSocketType
 
 try:  # module level: with postponed annotations FastAPI resolves `ws: WebSocket` from these globals
     from fastapi import APIRouter, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 except ImportError:  # snapshot/clock logic stays importable without the [sim] extra
     APIRouter = FastAPI = HTTPException = WebSocket = WebSocketDisconnect = None  # type: ignore
+else:
+    globals().update({"FastAPIType": FastAPI, "WebSocketType": WebSocket})
 
+from lang2sim.core.models import SimSpec
 from lang2sim.runtime.dashboard import make_router, read_report
 from lang2sim.runtime.telemetry_recorder import load_recorded_runs
 from lang2sim.telemetry.benchmark import (
@@ -80,6 +87,7 @@ class PlayedRun:
 
     @property
     def duration(self) -> float:
+        """Return the elapsed simulation time covered by this played run."""
         return float(self.t[-1] - self.t[0]) if len(self.t) > 1 else 0.0
 
 
@@ -99,7 +107,11 @@ def _crate_times(
 
 
 def build_played_run(
-    label: str, data: dict[str, Any], run_dir: Path, spec: Any, report: dict[str, Any] | None
+    label: str,
+    data: dict[str, Any],
+    run_dir: Path,
+    spec: SimSpec | Mapping[str, Any] | None,
+    report: dict[str, Any] | None,
 ) -> PlayedRun:
     """Build a PlayedRun instance with clearances and waypoint targets from trajectory data."""
     traj = Trajectory.from_dict(data)
@@ -161,6 +173,7 @@ class ReplayClock:
 
     @property
     def cycle(self) -> float:
+        """Return total playback cycle duration, including pauses between runs."""
         return sum(r.duration / self.speed + PAUSE_BETWEEN_RUNS_S for r in self.runs)
 
     def position(self, now: float | None = None) -> tuple:
@@ -181,10 +194,11 @@ class ReplayClock:
         return len(self.runs) - 1, len(last.t) - 1, False
 
     def restart(self) -> None:
+        """Reset the playback start time to the current monotonic clock."""
         self.started = time.monotonic()
 
 
-def _f(v: Any, d: int = 3) -> float | None:
+def _f(v: int | float | str | None, d: int = 3) -> float | None:
     return None if v is None or not math.isfinite(float(v)) else round(float(v), d)
 
 
@@ -266,7 +280,7 @@ def load_replay(
 
 def create_replay_app(
     run_dir: Path, which: str = "both", speed: float = 1.0, loop: bool = False
-) -> FastAPI:
+) -> FastAPIType:
     """Create a FastAPI app serving replay endpoints mimicking the control API."""
     if FastAPI is None:
         raise ImportError("the replay server needs FastAPI: pip install -e '.[sim]'")
@@ -375,7 +389,7 @@ def create_replay_app(
         v1.add_api_route(path, read_only, methods=["POST"], include_in_schema=False)
 
     @v1.websocket("/nav/feedback")
-    async def nav_feedback(ws: WebSocket, hz: float = 5.0) -> None:
+    async def nav_feedback(ws: WebSocketType, hz: float = 5.0) -> None:
         await ws.accept()
         period = 1.0 / max(0.5, min(hz, 20.0))
         try:

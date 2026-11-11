@@ -46,10 +46,12 @@ class HardwareInfo:
 
     @property
     def nvidia(self) -> GpuInfo | None:
+        """Return the first detected NVIDIA GPU, if present."""
         return next((g for g in self.gpus if g.vendor == "nvidia"), None)
 
     @property
     def max_vram_mb(self) -> int | None:
+        """Return the largest reported GPU memory capacity in megabytes."""
         vals = [g.vram_total_mb for g in self.gpus if g.vram_total_mb is not None]
         return max(vals) if vals else None
 

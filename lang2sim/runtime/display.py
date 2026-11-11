@@ -39,10 +39,12 @@ class DisplayPlan:
 
     @property
     def image_variant(self) -> ImageVariant:
+        """Return the container image variant required by the display mode."""
         return "sim-vnc" if self.mode == "vnc" else "sim"
 
     @property
     def has_gui(self) -> bool:
+        """Report whether the selected mode displays a graphical interface."""
         return self.mode != "headless"
 
     @property
@@ -53,6 +55,7 @@ class DisplayPlan:
         return {"nvidia": "gpu", "dri": "dri", "software": "software"}[self.gpu]
 
     def describe(self) -> str:
+        """Describe the selected display and rendering strategy for users."""
         view = {
             "x11": "Gazebo/RViz windows on your desktop (X11)",
             "wslg": "Gazebo/RViz windows via WSLg",

@@ -73,13 +73,16 @@ class WorldReport:
 
     @property
     def ok(self) -> bool:
+        """Report whether the world contains no error-level issues."""
         return not any(i.level == "error" for i in self.issues)
 
     @property
     def errors(self) -> list[Issue]:
+        """Return only error-level issues from the validation report."""
         return [i for i in self.issues if i.level == "error"]
 
     def summary(self) -> str:
+        """Format the world validation result and all issues as readable text."""
         if not self.issues:
             return f"world '{self.world_name}': ok"
         lines = [f"world '{self.world_name}': {'ok' if self.ok else 'REJECTED'}"]

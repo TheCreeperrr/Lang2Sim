@@ -42,11 +42,12 @@ class TelemetrySidebar(Widget):
     }
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: object) -> None:
         super().__init__(id="telemetry-sidebar", **kwargs)
         self.data = TelemetryData()
 
     def compose(self) -> ComposeResult:
+        """Render simulation, robot, collision, and context metrics."""
         with Vertical():
             yield Static("[bold #f1f2f6]SIMULATION[/]", classes="sidebar-section-title")
             yield Static(self._format_sim_state(), id="sim-state", classes="sidebar-metric")
@@ -106,7 +107,7 @@ class TelemetrySidebar(Widget):
         spend = (self.data.tokens_used / 1_000_000.0) * 0.20
         return f"[#ced6e0]{self.data.tokens_used:,} tokens\n{self.data.context_capacity_pct}% used\n${spend:.4f} spent[/]"
 
-    def update_telemetry(self, **kwargs) -> None:
+    def update_telemetry(self, **kwargs: object) -> None:
         """Update any metric dynamically and refresh corresponding label."""
         for key, value in kwargs.items():
             if hasattr(self.data, key):

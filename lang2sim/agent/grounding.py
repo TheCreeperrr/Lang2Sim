@@ -23,7 +23,7 @@ NQI_FORMULA = (
 )
 
 
-def _n(v: Any, d: int = 2, unit: str = "") -> str:
+def _n(v: int | float | str | None, d: int = 2, unit: str = "") -> str:
     return "n/a" if v is None else f"{float(v):.{d}f}{unit}"
 
 

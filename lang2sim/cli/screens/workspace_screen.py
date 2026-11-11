@@ -7,6 +7,7 @@ import asyncio
 import json
 from typing import Any
 
+from rich.console import RenderableType
 from rich.markup import escape
 from textual import events, work
 from textual.app import ComposeResult
@@ -54,7 +55,7 @@ class WorkspaceScreen(Screen):
         initial_prompt: str = "",
         session_id: str | None = None,
         workspace_name: str = "active_project",
-        **kwargs,
+        **kwargs: object,
     ) -> None:
         super().__init__(**kwargs)
         self.initial_prompt = initial_prompt
@@ -102,6 +103,7 @@ class WorkspaceScreen(Screen):
         self._progress_line: Static | None = None
 
     def compose(self) -> ComposeResult:
+        """Build the chat workspace, prompt input, and telemetry sidebar."""
         # Top title bar
         yield Static(f"S2L | {self.session.title} — lang2sim", id="workspace-header")
 
@@ -309,6 +311,7 @@ class WorkspaceScreen(Screen):
         )
 
     def on_session_switched(self, session_id: str | None) -> None:
+        """Load a newly selected session when it differs from the active one."""
         if session_id and session_id != self.session.id:
             self.load_session(session_id)
 
@@ -593,13 +596,15 @@ class WorkspaceScreen(Screen):
     # --- demo commands ------------------------------------------------------------
     @work(exclusive=False, group="demo")
     async def run_demo_command(self, command: str) -> None:
+        """Run a slash command and refresh telemetry after it completes."""
         await self.demo.run(command)
         self.poll_telemetry()
 
     def _demo_say(self, markup: str) -> None:
         self._mount_chat(Static(markup, classes="demo-line"))
 
-    def _demo_show(self, renderable: Any) -> None:
+    def _demo_show(self, renderable: RenderableType) -> None:
+        """Mount a Rich renderable, such as a benchmark table, in the chat."""
         self._mount_chat(Static(renderable, classes="demo-table"))
 
     def _demo_progress(self, markup: str | None) -> None:

@@ -193,7 +193,7 @@ class Trajectory:
     def from_samples(
         cls,
         samples: Sequence[Mapping[str, float]],
-        **kwargs: Any,
+        **kwargs: object,
     ) -> Trajectory:
         """Build from a list of dicts with keys ``t, x, y`` and optional ``yaw, v, w``."""
         if len(samples) < 2:
@@ -264,7 +264,7 @@ class Trajectory:
         return cls.from_dict(json.loads(Path(path).read_text(encoding="utf-8")))
 
     @classmethod
-    def from_csv(cls, path: str | Path, **kwargs: Any) -> Trajectory:
+    def from_csv(cls, path: str | Path, **kwargs: object) -> Trajectory:
         """Load a CSV with a header row containing at least ``t,x,y``."""
         with Path(path).open(newline="", encoding="utf-8") as fh:
             rows = [

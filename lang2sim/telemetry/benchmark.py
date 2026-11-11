@@ -29,6 +29,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from lang2sim.core.models import SimSpec
 from lang2sim.telemetry.nqi_scorer import (
     NQIParams,
     OccupancyGrid,
@@ -111,7 +112,7 @@ def scoring_params(
     }
 
 
-def mission_targets(spec: Any) -> list[XY]:
+def mission_targets(spec: SimSpec | Mapping[str, Any]) -> list[XY]:
     """Waypoints then goal, as (x, y), from a SimSpec (or its dict)."""
     m = spec.mission if hasattr(spec, "mission") else spec["mission"]
     get = (lambda p, k: getattr(p, k)) if hasattr(m, "goal_pose") else (lambda p, k: p[k])
@@ -198,7 +199,7 @@ def score_recorded_run(
     trajectory: Mapping[str, Any],
     *,
     run_dir: Path | None = None,
-    spec: Any = None,
+    spec: SimSpec | Mapping[str, Any] | None = None,
     spawned: Sequence[Mapping[str, Any]] | None = None,
     nav_status: str | None = None,
     params: NQIParams | None = None,

@@ -41,6 +41,7 @@ class HealthMonitor:
         self._low_since: float | None = None
 
     def reset(self) -> None:
+        """Clear the low-RTF timer used to debounce degraded-health reports."""
         self._low_since = None
 
     def evaluate(self, process_status: str, snap: RosSnapshot | None) -> HealthReport:

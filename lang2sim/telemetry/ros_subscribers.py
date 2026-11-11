@@ -95,6 +95,7 @@ class CollisionCounter:
         return False
 
     def reset(self) -> None:
+        """Clear collision counts and the remembered contact state."""
         self.collision_count = 0
         self.last_collision_time = 0.0
         self.in_collision = False
@@ -220,6 +221,7 @@ class TelemetryCollector:
         slam_x: float | None = None,
         slam_y: float | None = None,
     ) -> None:
+        """Record one kinematic sample and optional SLAM position for drift scoring."""
         calc_ate = None
         if slam_x is not None and slam_y is not None:
             calc_ate = math.hypot(x - slam_x, y - slam_y)
@@ -443,10 +445,12 @@ class ReplaySource:
 
     @classmethod
     def from_json(cls, json_path: str | Path) -> ReplaySource:
+        """Create a replay source by loading a trajectory JSON file."""
         traj = Trajectory.from_json(json_path)
         return cls(traj)
 
     def snapshot(self) -> dict[str, Any]:
+        """Return the replay's current state, or an inactive zero state without a trajectory."""
         if self.trajectory is None or self.trajectory.n == 0:
             return {
                 "active": False,

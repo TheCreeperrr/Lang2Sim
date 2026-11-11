@@ -398,6 +398,7 @@ class NodeControl:
         return subprocess.run(["pgrep", "-f", pattern], capture_output=True).returncode == 0
 
     def alive(self) -> dict[str, bool]:
+        """Return whether each managed ROS node process is currently present."""
         return {name: self._pgrep(f"lib/{pkg}/{exe}") for name, (pkg, exe) in NODES.items()}
 
     def _command(self, name: str) -> list[str]:
@@ -441,6 +442,7 @@ class NodeControl:
         raise ValueError(f"no restart recipe for {name}")
 
     def restart(self, name: str) -> bool:
+        """Restart a managed node, logging output and waiting briefly for it to appear."""
         pkg, exe = NODES[name]
         subprocess.run(["pkill", "-f", f"lib/{pkg}/{exe}"], capture_output=True)
         with self._lock:
@@ -460,6 +462,7 @@ class NodeControl:
         return False
 
     def stop_all(self) -> None:
+        """Stop all node processes launched by this controller."""
         with self._lock:
             for p in self._procs:
                 if p.poll() is None:

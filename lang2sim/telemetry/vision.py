@@ -59,6 +59,7 @@ class VisionResult:
     fallback: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize frame metadata and encoded image content for the control API."""
         return {
             "ok": self.ok,
             "stream": self.stream,
@@ -181,7 +182,7 @@ def _find_window_rect_windows(title_pattern: str) -> tuple[int, int, int, int] |
 
         matched_hwnd = None
 
-        def enum_windows_callback(hwnd: int, extra: Any) -> None:
+        def enum_windows_callback(hwnd: int, extra: object) -> None:
             nonlocal matched_hwnd
             if win32gui.IsWindowVisible(hwnd):
                 title = win32gui.GetWindowText(hwnd)
@@ -388,6 +389,7 @@ class CameraSampler:
             pass
 
     def sample(self, save_path: str | Path | None = None) -> VisionResult:
+        """Capture the latest camera frame or a synthetic fallback and optionally save it."""
         t0 = time.perf_counter()
         if self.last_frame is not None:
             img = self.last_frame

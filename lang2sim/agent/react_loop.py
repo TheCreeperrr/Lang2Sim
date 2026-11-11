@@ -691,7 +691,7 @@ class ReActSupervisor:
         self.messages.append({"role": "assistant", "content": content})
         self._persist_context()
 
-    def run_tool(self, tool_name: str, **kwargs: Any) -> dict[str, Any]:
+    def run_tool(self, tool_name: str, **kwargs: object) -> dict[str, Any]:
         """Execute a registered tool and persist its result in the conversation."""
         result = execute_tool(tool_name, **kwargs)
         if not hasattr(self, "messages"):
